@@ -1,0 +1,80 @@
+@OSTA.API_HostAddress = http://localhost:5053
+@projectId = 00000000-0000-0000-0000-000000000000
+@finishedGoodId = 00000000-0000-0000-0000-000000000000
+@assemblyId = 00000000-0000-0000-0000-000000000000
+
+GET {{OSTA.API_HostAddress}}/
+Accept: application/json
+
+###
+
+GET {{OSTA.API_HostAddress}}/health
+Accept: application/json
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/projects
+Accept: application/json
+
+###
+
+POST {{OSTA.API_HostAddress}}/api/v1/projects
+Content-Type: application/json
+
+{
+  "code": "PRJ-001",
+  "name": "Demo Project"
+}
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/projects/{{projectId}}/finishedgoods
+Accept: application/json
+
+###
+
+POST {{OSTA.API_HostAddress}}/api/v1/projects/{{projectId}}/finishedgoods
+Content-Type: application/json
+
+{
+  "code": "FG-001",
+  "name": "Main Vessel"
+}
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/finishedgoods/{{finishedGoodId}}/assemblies
+Accept: application/json
+
+###
+
+POST {{OSTA.API_HostAddress}}/api/v1/finishedgoods/{{finishedGoodId}}/assemblies
+Content-Type: application/json
+
+{
+  "code": "ASM-001",
+  "name": "Skid Base"
+}
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/assemblies/{{assemblyId}}/parts
+Accept: application/json
+
+###
+
+POST {{OSTA.API_HostAddress}}/api/v1/assemblies/{{assemblyId}}/parts
+Content-Type: application/json
+
+{
+  "partNumber": "PL-001",
+  "revision": "A",
+  "description": "Base plate"
+}
+
+###
+
+GET {{OSTA.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

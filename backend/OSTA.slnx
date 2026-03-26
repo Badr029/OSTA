@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/OSTA.API/OSTA.API.csproj" />
+    <Project Path="src/OSTA.Application/OSTA.Application.csproj" />
+    <Project Path="src/OSTA.Domain/OSTA.Domain.csproj" />
+    <Project Path="src/OSTA.Infrastructure/OSTA.Infrastructure.csproj" />
+  </Folder>
+</Solution>
