@@ -33,3 +33,6 @@ Thumbs.db
 
 # Tooling
 .dotnet/
+
+# Local docs
+OSTA_Developer*.md
