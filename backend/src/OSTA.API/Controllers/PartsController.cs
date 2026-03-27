@@ -1,13 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OSTA.API.Contracts.Parts;
+using OSTA.API.Infrastructure;
 using OSTA.Domain.Entities;
 using OSTA.Infrastructure.Persistence;
 
 namespace OSTA.API.Controllers;
 
 [ApiController]
-[Route("api/assemblies/{assemblyId:guid}/parts")]
 [Route("api/v1/assemblies/{assemblyId:guid}/parts")]
 public class PartsController : ControllerBase
 {
@@ -19,12 +19,14 @@ public class PartsController : ControllerBase
     }
 
     [HttpGet]
+    [ProducesResponseType(typeof(IEnumerable<PartResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IEnumerable<PartResponseDto>>> GetAll(Guid assemblyId)
     {
         var assemblyExists = await _context.Assemblies.AnyAsync(x => x.Id == assemblyId);
         if (!assemblyExists)
         {
-            return NotFound();
+            return NotFound(ApiProblemDetailsFactory.NotFound($"Assembly '{assemblyId}' was not found."));
         }
 
         var parts = await _context.Parts
@@ -38,6 +40,8 @@ public class PartsController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [ProducesResponseType(typeof(PartResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PartResponseDto>> GetById(Guid assemblyId, Guid id)
     {
         var part = await _context.Parts
@@ -47,19 +51,22 @@ public class PartsController : ControllerBase
 
         if (part is null)
         {
-            return NotFound();
+            return NotFound(ApiProblemDetailsFactory.NotFound($"Part '{id}' was not found under assembly '{assemblyId}'."));
         }
 
         return Ok(part);
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(PartResponseDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<PartResponseDto>> Create(Guid assemblyId, CreatePartRequestDto request)
     {
         var assemblyExists = await _context.Assemblies.AnyAsync(x => x.Id == assemblyId);
         if (!assemblyExists)
         {
-            return NotFound();
+            return NotFound(ApiProblemDetailsFactory.NotFound($"Assembly '{assemblyId}' was not found."));
         }
 
         var duplicatePart = await _context.Parts.AnyAsync(x =>
@@ -70,9 +77,9 @@ public class PartsController : ControllerBase
 
         if (duplicatePart)
         {
-            return Conflict(
-                $"A part with number '{request.PartNumber}' and revision '{request.Revision}' already exists for this assembly."
-            );
+            return Conflict(ApiProblemDetailsFactory.Conflict(
+                $"A part with number '{request.PartNumber}' and revision '{request.Revision}' already exists for assembly '{assemblyId}'."
+            ));
         }
 
         var part = new Part

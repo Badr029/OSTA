@@ -13,6 +13,11 @@ Accept: application/json
 
 ###
 
+GET {{OSTA.API_HostAddress}}/openapi/v1.json
+Accept: application/json
+
+###
+
 GET {{OSTA.API_HostAddress}}/api/v1/projects
 Accept: application/json
 
@@ -71,10 +76,5 @@ Content-Type: application/json
   "revision": "A",
   "description": "Base plate"
 }
-
-###
-
-GET {{OSTA.API_HostAddress}}/weatherforecast/
-Accept: application/json
 
 ###

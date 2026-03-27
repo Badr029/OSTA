@@ -3,10 +3,10 @@ namespace OSTA.Domain.Entities;
 public class Part
 {
     public Guid Id { get; set; }
-    public string PartNumber { get; set; } = default!;
-    public string Revision { get; set; } = default!;
-    public string Description { get; set; } = default!;
+    public required string PartNumber { get; set; }
+    public required string Revision { get; set; }
+    public required string Description { get; set; }
 
     public Guid AssemblyId { get; set; }
-    public Assembly Assembly { get; set; } = default!;
+    public Assembly Assembly { get; set; } = null!;
 }

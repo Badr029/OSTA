@@ -4,8 +4,8 @@ namespace OSTA.Domain.Entities;
 public class Project
 {
     public Guid Id { get; set; }
-    public string Code { get; set; } = default!;
-    public string Name { get; set; } = default!;
+    public required string Code { get; set; }
+    public required string Name { get; set; }
 
     public ICollection<FinishedGood> FinishedGoods { get; set; } = new List<FinishedGood>();
 }

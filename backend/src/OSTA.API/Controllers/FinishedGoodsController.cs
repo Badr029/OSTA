@@ -1,13 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OSTA.API.Contracts.FinishedGoods;
+using OSTA.API.Infrastructure;
 using OSTA.Domain.Entities;
 using OSTA.Infrastructure.Persistence;
 
 namespace OSTA.API.Controllers;
 
 [ApiController]
-[Route("api/projects/{projectId:guid}/finishedgoods")]
 [Route("api/v1/projects/{projectId:guid}/finishedgoods")]
 public class FinishedGoodsController : ControllerBase
 {
@@ -19,12 +19,14 @@ public class FinishedGoodsController : ControllerBase
     }
 
     [HttpGet]
+    [ProducesResponseType(typeof(IEnumerable<FinishedGoodResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IEnumerable<FinishedGoodResponseDto>>> GetAll(Guid projectId)
     {
         var projectExists = await _context.Projects.AnyAsync(x => x.Id == projectId);
         if (!projectExists)
         {
-            return NotFound();
+            return NotFound(ApiProblemDetailsFactory.NotFound($"Project '{projectId}' was not found."));
         }
 
         var finishedGoods = await _context.FinishedGoods
@@ -37,6 +39,8 @@ public class FinishedGoodsController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [ProducesResponseType(typeof(FinishedGoodResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<FinishedGoodResponseDto>> GetById(Guid projectId, Guid id)
     {
         var finishedGood = await _context.FinishedGoods
@@ -46,19 +50,22 @@ public class FinishedGoodsController : ControllerBase
 
         if (finishedGood is null)
         {
-            return NotFound();
+            return NotFound(ApiProblemDetailsFactory.NotFound($"Finished good '{id}' was not found under project '{projectId}'."));
         }
 
         return Ok(finishedGood);
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(FinishedGoodResponseDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<FinishedGoodResponseDto>> Create(Guid projectId, CreateFinishedGoodRequestDto request)
     {
         var projectExists = await _context.Projects.AnyAsync(x => x.Id == projectId);
         if (!projectExists)
         {
-            return NotFound();
+            return NotFound(ApiProblemDetailsFactory.NotFound($"Project '{projectId}' was not found."));
         }
 
         var duplicateCode = await _context.FinishedGoods
@@ -66,7 +73,7 @@ public class FinishedGoodsController : ControllerBase
 
         if (duplicateCode)
         {
-            return Conflict($"A finished good with code '{request.Code}' already exists for this project.");
+            return Conflict(ApiProblemDetailsFactory.Conflict($"A finished good with code '{request.Code}' already exists for project '{projectId}'."));
         }
 
         var finishedGood = new FinishedGood

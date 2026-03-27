@@ -14,13 +14,13 @@ public sealed class CreatePartRequestDto
 {
     [Required]
     [StringLength(100)]
-    public string PartNumber { get; set; } = default!;
+    public required string PartNumber { get; set; }
 
     [Required]
     [StringLength(30)]
-    public string Revision { get; set; } = default!;
+    public required string Revision { get; set; }
 
     [Required]
     [StringLength(500)]
-    public string Description { get; set; } = default!;
+    public required string Description { get; set; }
 }

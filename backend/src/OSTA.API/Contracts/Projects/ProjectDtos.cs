@@ -8,9 +8,9 @@ public sealed class CreateProjectRequestDto
 {
     [Required]
     [StringLength(50)]
-    public string Code { get; set; } = default!;
+    public required string Code { get; set; }
 
     [Required]
     [StringLength(200)]
-    public string Name { get; set; } = default!;
+    public required string Name { get; set; }
 }
