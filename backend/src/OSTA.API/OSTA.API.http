@@ -1,4 +1,5 @@
 @OSTA.API_HostAddress = http://localhost:5053
+@bomImportBatchId = 00000000-0000-0000-0000-000000000000
 @projectId = 00000000-0000-0000-0000-000000000000
 @finishedGoodId = 00000000-0000-0000-0000-000000000000
 @assemblyId = 00000000-0000-0000-0000-000000000000
@@ -14,6 +15,40 @@ Accept: application/json
 ###
 
 GET {{OSTA.API_HostAddress}}/openapi/v1.json
+Accept: application/json
+
+###
+
+POST {{OSTA.API_HostAddress}}/api/v1/bom-import-batches
+Content-Type: application/json
+
+{
+  "sourceFileName": "sample-bom.csv",
+  "lines": [
+    {
+      "rowNumber": 1,
+      "projectCode": "PRJ-BOM-001",
+      "projectName": "Sample Project",
+      "finishedGoodCode": "FG-BOM-001",
+      "finishedGoodName": "Sample Finished Good",
+      "assemblyCode": "ASM-BOM-001",
+      "assemblyName": "Sample Assembly",
+      "partNumber": "PART-BOM-001",
+      "revision": "A",
+      "description": "Imported sample part",
+      "quantity": 2
+    }
+  ]
+}
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/bom-import-batches
+Accept: application/json
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/bom-import-batches/{{bomImportBatchId}}
 Accept: application/json
 
 ###

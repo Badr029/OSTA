@@ -14,6 +14,8 @@ public class OstaDbContext : DbContext
     public DbSet<FinishedGood> FinishedGoods => Set<FinishedGood>();
     public DbSet<Assembly> Assemblies => Set<Assembly>();
     public DbSet<Part> Parts => Set<Part>();
+    public DbSet<BOMImportBatch> BOMImportBatches => Set<BOMImportBatch>();
+    public DbSet<BOMImportLine> BOMImportLines => Set<BOMImportLine>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -114,6 +116,103 @@ public class OstaDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(x => new { x.AssemblyId, x.PartNumber, x.Revision })
+                .IsUnique();
+        });
+
+        modelBuilder.Entity<BOMImportBatch>(entity =>
+        {
+            entity.ToTable("bom_import_batches");
+
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.SourceFileName)
+                .HasMaxLength(260)
+                .IsRequired();
+
+            entity.Property(x => x.ImportedAtUtc)
+                .IsRequired();
+
+            entity.Property(x => x.Status)
+                .HasConversion<string>()
+                .HasMaxLength(20)
+                .IsRequired();
+
+            entity.Property(x => x.TotalRows)
+                .IsRequired();
+
+            entity.Property(x => x.SuccessfulRows)
+                .IsRequired();
+
+            entity.Property(x => x.FailedRows)
+                .IsRequired();
+        });
+
+        modelBuilder.Entity<BOMImportLine>(entity =>
+        {
+            entity.ToTable("bom_import_lines");
+
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.BOMImportBatchId)
+                .IsRequired();
+
+            entity.Property(x => x.RowNumber)
+                .IsRequired();
+
+            entity.Property(x => x.ProjectCode)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(x => x.ProjectName)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            entity.Property(x => x.FinishedGoodCode)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(x => x.FinishedGoodName)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            entity.Property(x => x.AssemblyCode)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(x => x.AssemblyName)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            entity.Property(x => x.PartNumber)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(x => x.Revision)
+                .HasMaxLength(30)
+                .IsRequired();
+
+            entity.Property(x => x.Description)
+                .HasMaxLength(500)
+                .IsRequired();
+
+            entity.Property(x => x.Quantity)
+                .HasPrecision(18, 4)
+                .IsRequired();
+
+            entity.Property(x => x.Status)
+                .HasConversion<string>()
+                .HasMaxLength(20)
+                .IsRequired();
+
+            entity.Property(x => x.ErrorMessage)
+                .HasMaxLength(1000);
+
+            entity.HasOne(x => x.BOMImportBatch)
+                .WithMany(x => x.Lines)
+                .HasForeignKey(x => x.BOMImportBatchId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(x => new { x.BOMImportBatchId, x.RowNumber })
                 .IsUnique();
         });
 
