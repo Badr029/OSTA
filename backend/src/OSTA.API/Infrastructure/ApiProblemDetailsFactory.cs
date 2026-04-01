@@ -4,6 +4,13 @@ namespace OSTA.API.Infrastructure;
 
 internal static class ApiProblemDetailsFactory
 {
+    public static ProblemDetails BadRequest(string detail) => new()
+    {
+        Status = StatusCodes.Status400BadRequest,
+        Title = "Invalid request",
+        Detail = detail
+    };
+
     public static ProblemDetails NotFound(string detail) => new()
     {
         Status = StatusCodes.Status404NotFound,

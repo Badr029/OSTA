@@ -9,4 +9,7 @@ public class Part
 
     public Guid AssemblyId { get; set; }
     public Assembly Assembly { get; set; } = null!;
+
+    public Guid? SourceItemMasterId { get; set; }
+    public ItemMaster? SourceItemMaster { get; set; }
 }

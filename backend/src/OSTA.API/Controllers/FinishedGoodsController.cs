@@ -32,7 +32,13 @@ public class FinishedGoodsController : ControllerBase
         var finishedGoods = await _context.FinishedGoods
             .Where(x => x.ProjectId == projectId)
             .OrderBy(x => x.Code)
-            .Select(x => new FinishedGoodResponseDto(x.Id, x.Code, x.Name, x.ProjectId))
+            .Select(x => new FinishedGoodResponseDto(
+                x.Id,
+                x.Code,
+                x.Name,
+                x.ProjectId,
+                x.SourceItemMasterId,
+                x.SourceBomHeaderId))
             .ToListAsync();
 
         return Ok(finishedGoods);
@@ -45,7 +51,13 @@ public class FinishedGoodsController : ControllerBase
     {
         var finishedGood = await _context.FinishedGoods
             .Where(x => x.ProjectId == projectId && x.Id == id)
-            .Select(x => new FinishedGoodResponseDto(x.Id, x.Code, x.Name, x.ProjectId))
+            .Select(x => new FinishedGoodResponseDto(
+                x.Id,
+                x.Code,
+                x.Name,
+                x.ProjectId,
+                x.SourceItemMasterId,
+                x.SourceBomHeaderId))
             .FirstOrDefaultAsync();
 
         if (finishedGood is null)
@@ -60,7 +72,7 @@ public class FinishedGoodsController : ControllerBase
     [ProducesResponseType(typeof(FinishedGoodResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<FinishedGoodResponseDto>> Create(Guid projectId, CreateFinishedGoodRequestDto request)
+    public async Task<ActionResult<FinishedGoodResponseDto>> Create(Guid projectId, [FromBody] CreateFinishedGoodRequestDto request)
     {
         var projectExists = await _context.Projects.AnyAsync(x => x.Id == projectId);
         if (!projectExists)
@@ -91,7 +103,9 @@ public class FinishedGoodsController : ControllerBase
             finishedGood.Id,
             finishedGood.Code,
             finishedGood.Name,
-            finishedGood.ProjectId
+            finishedGood.ProjectId,
+            finishedGood.SourceItemMasterId,
+            finishedGood.SourceBomHeaderId
         );
 
         return CreatedAtAction(nameof(GetById), new { projectId, id = finishedGood.Id }, response);

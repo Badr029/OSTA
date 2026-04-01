@@ -7,7 +7,8 @@ public sealed record PartResponseDto(
     string PartNumber,
     string Revision,
     string Description,
-    Guid AssemblyId
+    Guid AssemblyId,
+    Guid? SourceItemMasterId
 );
 
 public sealed class CreatePartRequestDto

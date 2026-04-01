@@ -33,7 +33,13 @@ public class PartsController : ControllerBase
             .Where(x => x.AssemblyId == assemblyId)
             .OrderBy(x => x.PartNumber)
             .ThenBy(x => x.Revision)
-            .Select(x => new PartResponseDto(x.Id, x.PartNumber, x.Revision, x.Description, x.AssemblyId))
+            .Select(x => new PartResponseDto(
+                x.Id,
+                x.PartNumber,
+                x.Revision,
+                x.Description,
+                x.AssemblyId,
+                x.SourceItemMasterId))
             .ToListAsync();
 
         return Ok(parts);
@@ -46,7 +52,13 @@ public class PartsController : ControllerBase
     {
         var part = await _context.Parts
             .Where(x => x.AssemblyId == assemblyId && x.Id == id)
-            .Select(x => new PartResponseDto(x.Id, x.PartNumber, x.Revision, x.Description, x.AssemblyId))
+            .Select(x => new PartResponseDto(
+                x.Id,
+                x.PartNumber,
+                x.Revision,
+                x.Description,
+                x.AssemblyId,
+                x.SourceItemMasterId))
             .FirstOrDefaultAsync();
 
         if (part is null)
@@ -61,7 +73,7 @@ public class PartsController : ControllerBase
     [ProducesResponseType(typeof(PartResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<PartResponseDto>> Create(Guid assemblyId, CreatePartRequestDto request)
+    public async Task<ActionResult<PartResponseDto>> Create(Guid assemblyId, [FromBody] CreatePartRequestDto request)
     {
         var assemblyExists = await _context.Assemblies.AnyAsync(x => x.Id == assemblyId);
         if (!assemblyExists)
@@ -99,7 +111,8 @@ public class PartsController : ControllerBase
             part.PartNumber,
             part.Revision,
             part.Description,
-            part.AssemblyId
+            part.AssemblyId,
+            part.SourceItemMasterId
         );
 
         return CreatedAtAction(nameof(GetById), new { assemblyId, id = part.Id }, response);

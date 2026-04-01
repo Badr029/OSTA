@@ -18,6 +18,12 @@ public class BOMImportLine
     public required string Revision { get; set; }
     public required string Description { get; set; }
     public decimal Quantity { get; set; }
+    public string? MaterialCode { get; set; }
+    public decimal? ThicknessMm { get; set; }
+    public decimal? WeightKg { get; set; }
+    public string? Notes { get; set; }
+    public string? ProcessRouteCode { get; set; }
+    public bool? CutOnly { get; set; }
     public BOMImportLineStatus Status { get; set; }
     public string? ErrorMessage { get; set; }
 }

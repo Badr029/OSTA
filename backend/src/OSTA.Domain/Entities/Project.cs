@@ -8,4 +8,5 @@ public class Project
     public required string Name { get; set; }
 
     public ICollection<FinishedGood> FinishedGoods { get; set; } = new List<FinishedGood>();
+    public ICollection<WorkOrder> WorkOrders { get; set; } = new List<WorkOrder>();
 }

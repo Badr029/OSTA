@@ -51,7 +51,7 @@ public class ProjectsController : ControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(ProjectResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<ProjectResponseDto>> Create(CreateProjectRequestDto request)
+    public async Task<ActionResult<ProjectResponseDto>> Create([FromBody] CreateProjectRequestDto request)
     {
         var duplicateCode = await _context.Projects.AnyAsync(x => x.Code == request.Code);
 

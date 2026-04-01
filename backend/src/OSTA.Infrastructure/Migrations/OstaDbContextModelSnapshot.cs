@@ -41,7 +41,17 @@ namespace OSTA.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<Guid?>("SourceBomItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("SourceComponentItemMasterId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("SourceBomItemId");
+
+                    b.HasIndex("SourceComponentItemMasterId");
 
                     b.HasIndex("FinishedGoodId", "Code")
                         .IsUnique();
@@ -101,6 +111,9 @@ namespace OSTA.Infrastructure.Migrations
                     b.Property<Guid>("BOMImportBatchId")
                         .HasColumnType("uuid");
 
+                    b.Property<bool?>("CutOnly")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -120,8 +133,20 @@ namespace OSTA.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("MaterialCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
                     b.Property<string>("PartNumber")
                         .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ProcessRouteCode")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
@@ -152,12 +177,218 @@ namespace OSTA.Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<decimal?>("ThicknessMm")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal?>("WeightKg")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("BOMImportBatchId", "RowNumber")
                         .IsUnique();
 
                     b.ToTable("bom_import_lines", (string)null);
+                });
+
+            modelBuilder.Entity("OSTA.Domain.Entities.BomHeader", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("BaseQuantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<Guid>("ParentItemMasterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PlantCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Revision")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Usage")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentItemMasterId", "Revision", "Usage", "PlantCode")
+                        .IsUnique();
+
+                    b.ToTable("bom_headers", (string)null);
+                });
+
+            modelBuilder.Entity("OSTA.Domain.Entities.BomImportTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("DataStartRowIndex")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("FormatType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int>("HeaderRowIndex")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("StructureType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("bom_import_templates", (string)null);
+                });
+
+            modelBuilder.Entity("OSTA.Domain.Entities.BomImportTemplateFieldMapping", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BomImportTemplateId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DefaultValue")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SourceColumnName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("TargetField")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BomImportTemplateId", "TargetField")
+                        .IsUnique();
+
+                    b.ToTable("bom_import_template_field_mappings", (string)null);
+                });
+
+            modelBuilder.Entity("OSTA.Domain.Entities.BomItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BomHeaderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ComponentItemMasterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool?>("CutOnly")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool?>("IsBulk")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool?>("IsPhantom")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ItemCategory")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("ItemNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("LineNotes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("PositionText")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("ProcessRouteCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ProcurementType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal?>("ScrapPercent")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Uom")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ComponentItemMasterId");
+
+                    b.HasIndex("BomHeaderId", "ItemNumber")
+                        .IsUnique();
+
+                    b.ToTable("bom_items", (string)null);
                 });
 
             modelBuilder.Entity("OSTA.Domain.Entities.FinishedGood", b =>
@@ -179,12 +410,114 @@ namespace OSTA.Infrastructure.Migrations
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("SourceBomHeaderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("SourceItemMasterId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("SourceBomHeaderId");
+
+                    b.HasIndex("SourceItemMasterId");
 
                     b.HasIndex("ProjectId", "Code")
                         .IsUnique();
 
                     b.ToTable("finished_goods", (string)null);
+                });
+
+            modelBuilder.Entity("OSTA.Domain.Entities.ItemMaster", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BaseUom")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("DrawingNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("FinishCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<decimal?>("HeightMm")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ItemType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<decimal?>("LengthMm")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<string>("MaterialCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("ProcurementType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Revision")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Specification")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<decimal?>("ThicknessMm")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal?>("WeightKg")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal?>("WidthMm")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("item_masters", (string)null);
                 });
 
             modelBuilder.Entity("OSTA.Domain.Entities.Part", b =>
@@ -211,7 +544,12 @@ namespace OSTA.Infrastructure.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
 
+                    b.Property<Guid?>("SourceItemMasterId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("SourceItemMasterId");
 
                     b.HasIndex("AssemblyId", "PartNumber", "Revision")
                         .IsUnique();
@@ -243,6 +581,254 @@ namespace OSTA.Infrastructure.Migrations
                     b.ToTable("projects", (string)null);
                 });
 
+            modelBuilder.Entity("OSTA.Domain.Entities.RoutingOperation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsQcGate")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("OperationCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("OperationName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("OperationNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid>("RoutingTemplateId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("RunTimeMinutes")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("SetupTimeMinutes")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<Guid>("WorkCenterId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorkCenterId");
+
+                    b.HasIndex("RoutingTemplateId", "OperationNumber")
+                        .IsUnique();
+
+                    b.ToTable("routing_operations", (string)null);
+                });
+
+            modelBuilder.Entity("OSTA.Domain.Entities.RoutingTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("ItemMasterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Revision")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemMasterId", "Code", "Revision")
+                        .IsUnique();
+
+                    b.ToTable("routing_templates", (string)null);
+                });
+
+            modelBuilder.Entity("OSTA.Domain.Entities.WorkCenter", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Department")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<decimal>("HourlyRate")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("work_centers", (string)null);
+                });
+
+            modelBuilder.Entity("OSTA.Domain.Entities.WorkOrder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AssemblyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ClosedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("CompletedQuantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<Guid>("FinishedGoodId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("PlannedQuantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ReleasedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("WorkOrderNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssemblyId")
+                        .IsUnique();
+
+                    b.HasIndex("FinishedGoodId");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("WorkOrderNumber")
+                        .IsUnique();
+
+                    b.ToTable("work_orders", (string)null);
+                });
+
+            modelBuilder.Entity("OSTA.Domain.Entities.WorkOrderOperation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("CompletedQuantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<bool>("IsQcGate")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("OperationCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("OperationName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("OperationNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<decimal>("PlannedQuantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<Guid?>("RoutingOperationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("StartedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid>("WorkCenterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("WorkOrderId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoutingOperationId");
+
+                    b.HasIndex("WorkCenterId");
+
+                    b.HasIndex("WorkOrderId", "OperationNumber")
+                        .IsUnique();
+
+                    b.ToTable("work_order_operations", (string)null);
+                });
+
             modelBuilder.Entity("OSTA.Domain.Entities.Assembly", b =>
                 {
                     b.HasOne("OSTA.Domain.Entities.FinishedGood", "FinishedGood")
@@ -251,7 +837,21 @@ namespace OSTA.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("OSTA.Domain.Entities.BomItem", "SourceBomItem")
+                        .WithMany()
+                        .HasForeignKey("SourceBomItemId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("OSTA.Domain.Entities.ItemMaster", "SourceComponentItemMaster")
+                        .WithMany()
+                        .HasForeignKey("SourceComponentItemMasterId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("FinishedGood");
+
+                    b.Navigation("SourceBomItem");
+
+                    b.Navigation("SourceComponentItemMaster");
                 });
 
             modelBuilder.Entity("OSTA.Domain.Entities.BOMImportLine", b =>
@@ -265,6 +865,47 @@ namespace OSTA.Infrastructure.Migrations
                     b.Navigation("BOMImportBatch");
                 });
 
+            modelBuilder.Entity("OSTA.Domain.Entities.BomHeader", b =>
+                {
+                    b.HasOne("OSTA.Domain.Entities.ItemMaster", "ParentItemMaster")
+                        .WithMany("BomHeaders")
+                        .HasForeignKey("ParentItemMasterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ParentItemMaster");
+                });
+
+            modelBuilder.Entity("OSTA.Domain.Entities.BomImportTemplateFieldMapping", b =>
+                {
+                    b.HasOne("OSTA.Domain.Entities.BomImportTemplate", "BomImportTemplate")
+                        .WithMany("FieldMappings")
+                        .HasForeignKey("BomImportTemplateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BomImportTemplate");
+                });
+
+            modelBuilder.Entity("OSTA.Domain.Entities.BomItem", b =>
+                {
+                    b.HasOne("OSTA.Domain.Entities.BomHeader", "BomHeader")
+                        .WithMany("Items")
+                        .HasForeignKey("BomHeaderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OSTA.Domain.Entities.ItemMaster", "ComponentItemMaster")
+                        .WithMany("ComponentBomItems")
+                        .HasForeignKey("ComponentItemMasterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("BomHeader");
+
+                    b.Navigation("ComponentItemMaster");
+                });
+
             modelBuilder.Entity("OSTA.Domain.Entities.FinishedGood", b =>
                 {
                     b.HasOne("OSTA.Domain.Entities.Project", "Project")
@@ -273,7 +914,21 @@ namespace OSTA.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("OSTA.Domain.Entities.BomHeader", "SourceBomHeader")
+                        .WithMany()
+                        .HasForeignKey("SourceBomHeaderId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("OSTA.Domain.Entities.ItemMaster", "SourceItemMaster")
+                        .WithMany()
+                        .HasForeignKey("SourceItemMasterId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Project");
+
+                    b.Navigation("SourceBomHeader");
+
+                    b.Navigation("SourceItemMaster");
                 });
 
             modelBuilder.Entity("OSTA.Domain.Entities.Part", b =>
@@ -284,12 +939,104 @@ namespace OSTA.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("OSTA.Domain.Entities.ItemMaster", "SourceItemMaster")
+                        .WithMany()
+                        .HasForeignKey("SourceItemMasterId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Assembly");
+
+                    b.Navigation("SourceItemMaster");
+                });
+
+            modelBuilder.Entity("OSTA.Domain.Entities.RoutingOperation", b =>
+                {
+                    b.HasOne("OSTA.Domain.Entities.RoutingTemplate", "RoutingTemplate")
+                        .WithMany("Operations")
+                        .HasForeignKey("RoutingTemplateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OSTA.Domain.Entities.WorkCenter", "WorkCenter")
+                        .WithMany("RoutingOperations")
+                        .HasForeignKey("WorkCenterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("RoutingTemplate");
+
+                    b.Navigation("WorkCenter");
+                });
+
+            modelBuilder.Entity("OSTA.Domain.Entities.RoutingTemplate", b =>
+                {
+                    b.HasOne("OSTA.Domain.Entities.ItemMaster", "ItemMaster")
+                        .WithMany("RoutingTemplates")
+                        .HasForeignKey("ItemMasterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ItemMaster");
+                });
+
+            modelBuilder.Entity("OSTA.Domain.Entities.WorkOrder", b =>
+                {
+                    b.HasOne("OSTA.Domain.Entities.Assembly", "Assembly")
+                        .WithMany("WorkOrders")
+                        .HasForeignKey("AssemblyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("OSTA.Domain.Entities.FinishedGood", "FinishedGood")
+                        .WithMany("WorkOrders")
+                        .HasForeignKey("FinishedGoodId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("OSTA.Domain.Entities.Project", "Project")
+                        .WithMany("WorkOrders")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Assembly");
+
+                    b.Navigation("FinishedGood");
+
+                    b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("OSTA.Domain.Entities.WorkOrderOperation", b =>
+                {
+                    b.HasOne("OSTA.Domain.Entities.RoutingOperation", "RoutingOperation")
+                        .WithMany("WorkOrderOperations")
+                        .HasForeignKey("RoutingOperationId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("OSTA.Domain.Entities.WorkCenter", "WorkCenter")
+                        .WithMany("WorkOrderOperations")
+                        .HasForeignKey("WorkCenterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("OSTA.Domain.Entities.WorkOrder", "WorkOrder")
+                        .WithMany("Operations")
+                        .HasForeignKey("WorkOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RoutingOperation");
+
+                    b.Navigation("WorkCenter");
+
+                    b.Navigation("WorkOrder");
                 });
 
             modelBuilder.Entity("OSTA.Domain.Entities.Assembly", b =>
                 {
                     b.Navigation("Parts");
+
+                    b.Navigation("WorkOrders");
                 });
 
             modelBuilder.Entity("OSTA.Domain.Entities.BOMImportBatch", b =>
@@ -297,14 +1044,59 @@ namespace OSTA.Infrastructure.Migrations
                     b.Navigation("Lines");
                 });
 
+            modelBuilder.Entity("OSTA.Domain.Entities.BomHeader", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("OSTA.Domain.Entities.BomImportTemplate", b =>
+                {
+                    b.Navigation("FieldMappings");
+                });
+
             modelBuilder.Entity("OSTA.Domain.Entities.FinishedGood", b =>
                 {
                     b.Navigation("Assemblies");
+
+                    b.Navigation("WorkOrders");
+                });
+
+            modelBuilder.Entity("OSTA.Domain.Entities.ItemMaster", b =>
+                {
+                    b.Navigation("BomHeaders");
+
+                    b.Navigation("ComponentBomItems");
+
+                    b.Navigation("RoutingTemplates");
                 });
 
             modelBuilder.Entity("OSTA.Domain.Entities.Project", b =>
                 {
                     b.Navigation("FinishedGoods");
+
+                    b.Navigation("WorkOrders");
+                });
+
+            modelBuilder.Entity("OSTA.Domain.Entities.RoutingOperation", b =>
+                {
+                    b.Navigation("WorkOrderOperations");
+                });
+
+            modelBuilder.Entity("OSTA.Domain.Entities.RoutingTemplate", b =>
+                {
+                    b.Navigation("Operations");
+                });
+
+            modelBuilder.Entity("OSTA.Domain.Entities.WorkCenter", b =>
+                {
+                    b.Navigation("RoutingOperations");
+
+                    b.Navigation("WorkOrderOperations");
+                });
+
+            modelBuilder.Entity("OSTA.Domain.Entities.WorkOrder", b =>
+                {
+                    b.Navigation("Operations");
                 });
 #pragma warning restore 612, 618
         }

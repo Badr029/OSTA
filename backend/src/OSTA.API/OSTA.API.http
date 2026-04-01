@@ -1,5 +1,14 @@
 @OSTA.API_HostAddress = http://localhost:5053
 @bomImportBatchId = 00000000-0000-0000-0000-000000000000
+@bomImportTemplateId = 00000000-0000-0000-0000-000000000000
+@bomHeaderId = 00000000-0000-0000-0000-000000000000
+@bomItemId = 00000000-0000-0000-0000-000000000000
+@itemMasterId = 00000000-0000-0000-0000-000000000000
+@workCenterId = 00000000-0000-0000-0000-000000000000
+@routingTemplateId = 00000000-0000-0000-0000-000000000000
+@routingOperationId = 00000000-0000-0000-0000-000000000000
+@workOrderId = 00000000-0000-0000-0000-000000000000
+@workOrderOperationId = 00000000-0000-0000-0000-000000000000
 @projectId = 00000000-0000-0000-0000-000000000000
 @finishedGoodId = 00000000-0000-0000-0000-000000000000
 @assemblyId = 00000000-0000-0000-0000-000000000000
@@ -24,6 +33,7 @@ Content-Type: application/json
 
 {
   "sourceFileName": "sample-bom.csv",
+  "importMode": "ExecutionOnly",
   "lines": [
     {
       "rowNumber": 1,
@@ -36,10 +46,82 @@ Content-Type: application/json
       "partNumber": "PART-BOM-001",
       "revision": "A",
       "description": "Imported sample part",
-      "quantity": 2
+      "quantity": 2,
+      "materialCode": "AL-5052",
+      "thicknessMm": 4.0,
+      "weightKg": 9.8,
+      "notes": "Audit sample line",
+      "processRouteCode": "ROUTE-01",
+      "cutOnly": true
     }
   ]
 }
+
+###
+
+POST {{OSTA.API_HostAddress}}/api/v1/bom-import-batches/from-template
+Content-Type: application/json
+
+{
+  "templateCode": "QCC_MTO_CSV_V1",
+  "sourceFileName": "qcc-mto.csv",
+  "importMode": "ExecutionAndProductDefinition",
+  "csvContent": "project_code,assembly_code,part_code,part_name,qty,uom,material_code,thickness_mm,process_route,cut_only,weight_kg,notes\nPRJ-TPL-001,ASM-TPL-001,PART-TPL-001,Drive mounting plate,2,EA,STL-S275,6.0,CUT-DRILL,true,12.5,First QCC template line"
+}
+
+###
+
+POST {{OSTA.API_HostAddress}}/api/v1/bom-import-batches/from-template
+Content-Type: application/json
+
+{
+  "templateCode": "CONVEYOR_BOM_V1",
+  "sourceFileName": "conveyor-bom.csv",
+  "importMode": "ExecutionOnly",
+  "defaultValues": {
+    "ProjectCode": "PRJ-CONVEYOR-TPL-001",
+    "ProjectName": "Conveyor Template Project"
+  },
+  "csvContent": "ParentItemCode,ParentItemName,ComponentItemCode,ComponentItemName,PartNumber,Revision,Description,Quantity\nMCB-0600X0075,Modular Belt Conveyor 600x75,MCB-0600X0075-DRIVE,Drive Unit Assembly,DRV-PLATE-001,A,Drive mounting plate,1"
+}
+
+###
+
+POST {{OSTA.API_HostAddress}}/api/v1/bom-import-batches/from-template
+Content-Type: application/json
+
+{
+  "templateCode": "CONVEYOR_BOM_LEVELLED_V1",
+  "sourceFileName": "conveyor-levelled-bom.csv",
+  "importMode": "ExecutionOnly",
+  "defaultValues": {
+    "ProjectCode": "PRJ-CONVEYOR-LVL-001",
+    "ProjectName": "Conveyor Levelled Template Project"
+  },
+  "csvContent": "Level,ParentCode,ItemNo,ComponentCode,Description,Qty,UoM,ItemType,ProcurementType,Revision,Material,ThicknessMM,WeightKG,Notes\n0,,0000,MCB-0600X0075,Modular Belt Conveyor 600x75,1,EA,FinishedGood,Make,A,,,\n1,MCB-0600X0075,0010,MCB-0600X0075-DRIVE,Drive Unit Assembly,1,EA,Assembly,Make,A,,,"
+}
+
+###
+
+POST {{OSTA.API_HostAddress}}/api/v1/bom-import-batches/from-template/preview
+Content-Type: application/json
+
+{
+  "templateCode": "QCC_MTO_CSV_V1",
+  "sourceFileName": "qcc-mto-preview.csv",
+  "importMode": "ExecutionAndProductDefinition",
+  "csvContent": "project_code,assembly_code,part_code,part_name,qty,uom,material_code,thickness_mm,process_route,cut_only,weight_kg,notes\nPRJ-TPL-PREVIEW-001,ASM-TPL-PREVIEW-001,PART-TPL-PREVIEW-001,Preview drive mounting plate,2,EA,STL-S275,6.0,CUT-DRILL,true,12.5,Preview only"
+}
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/bom-import-templates
+Accept: application/json
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/bom-import-templates/{{bomImportTemplateId}}
+Accept: application/json
 
 ###
 
@@ -49,6 +131,223 @@ Accept: application/json
 ###
 
 GET {{OSTA.API_HostAddress}}/api/v1/bom-import-batches/{{bomImportBatchId}}
+Accept: application/json
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/item-masters
+Accept: application/json
+
+###
+
+POST {{OSTA.API_HostAddress}}/api/v1/item-masters
+Content-Type: application/json
+
+{
+  "code": "MCB-0600X0075",
+  "name": "Modular Belt Conveyor 600x75",
+  "description": "Finished good modular belt conveyor for small factory reference product",
+  "materialCode": "STL-S275",
+  "thicknessMm": 8.5,
+  "weightKg": 42.75,
+  "lengthMm": 1200,
+  "widthMm": 450,
+  "heightMm": 300,
+  "drawingNumber": "DWG-1001",
+  "finishCode": "POWDER-BLK",
+  "specification": "Factory spec rev 1",
+  "notes": "Reference conveyor item",
+  "itemType": "FinishedGood",
+  "procurementType": "Make",
+  "baseUom": "EA",
+  "revision": "A",
+  "isActive": true
+}
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/item-masters/{{itemMasterId}}
+Accept: application/json
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/work-centers
+Accept: application/json
+
+###
+
+POST {{OSTA.API_HostAddress}}/api/v1/work-centers
+Content-Type: application/json
+
+{
+  "code": "LASER",
+  "name": "Laser Cutting",
+  "department": "Fabrication",
+  "hourlyRate": 120,
+  "isActive": true
+}
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/work-centers/{{workCenterId}}
+Accept: application/json
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/routing-templates
+Accept: application/json
+
+###
+
+POST {{OSTA.API_HostAddress}}/api/v1/routing-templates
+Content-Type: application/json
+
+{
+  "itemMasterId": "{{itemMasterId}}",
+  "code": "FRAME-ROUTE-A",
+  "name": "Frame Fabrication Route",
+  "revision": "A",
+  "status": "Active",
+  "isActive": true
+}
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/routing-templates/{{routingTemplateId}}
+Accept: application/json
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/routing-templates/{{routingTemplateId}}/operations
+Accept: application/json
+
+###
+
+POST {{OSTA.API_HostAddress}}/api/v1/routing-templates/{{routingTemplateId}}/operations
+Content-Type: application/json
+
+{
+  "operationNumber": "0010",
+  "operationCode": "CUT",
+  "operationName": "Cutting",
+  "workCenterId": "{{workCenterId}}",
+  "setupTimeMinutes": 10,
+  "runTimeMinutes": 20,
+  "sequence": 10,
+  "isQcGate": false
+}
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/routing-templates/{{routingTemplateId}}/operations/{{routingOperationId}}
+Accept: application/json
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/work-orders
+Accept: application/json
+
+###
+
+POST {{OSTA.API_HostAddress}}/api/v1/work-orders/generate
+Content-Type: application/json
+
+{
+  "projectId": "{{projectId}}",
+  "finishedGoodId": "{{finishedGoodId}}",
+  "assemblyId": "{{assemblyId}}",
+  "plannedQuantity": 1
+}
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/work-orders/{{workOrderId}}
+Accept: application/json
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/work-orders/{{workOrderId}}/operations
+Accept: application/json
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/work-order-operations/{{workOrderOperationId}}
+Accept: application/json
+
+###
+
+POST {{OSTA.API_HostAddress}}/api/v1/work-order-operations/{{workOrderOperationId}}/start
+Accept: application/json
+
+###
+
+POST {{OSTA.API_HostAddress}}/api/v1/work-order-operations/{{workOrderOperationId}}/complete
+Accept: application/json
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/bom-headers
+Accept: application/json
+
+###
+
+POST {{OSTA.API_HostAddress}}/api/v1/bom-headers
+Content-Type: application/json
+
+{
+  "parentItemMasterId": "{{itemMasterId}}",
+  "revision": "A",
+  "baseQuantity": 1,
+  "usage": "Production",
+  "status": "Active",
+  "plantCode": "SMALL-FACTORY-01"
+}
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/bom-headers/{{bomHeaderId}}
+Accept: application/json
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/bom-headers/{{bomHeaderId}}/structure
+Accept: application/json
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/bom-headers/{{bomHeaderId}}/items
+Accept: application/json
+
+###
+
+POST {{OSTA.API_HostAddress}}/api/v1/bom-headers/{{bomHeaderId}}/items
+Content-Type: application/json
+
+{
+  "itemNumber": "0010",
+  "componentItemMasterId": "{{itemMasterId}}",
+  "quantity": 1,
+  "uom": "EA",
+  "itemCategory": "Assembly",
+  "procurementType": "Make",
+  "scrapPercent": 4.5,
+  "processRouteCode": "LASER-WELD",
+  "positionText": "Left drive station",
+  "lineNotes": "Use verified weld fixture",
+  "isPhantom": false,
+  "isBulk": false,
+  "cutOnly": true,
+  "sortOrder": 10
+}
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/bom-headers/{{bomHeaderId}}/items/{{bomItemId}}
+Accept: application/json
+
+###
+
+POST {{OSTA.API_HostAddress}}/dev/seeds/conveyor-product-definition
 Accept: application/json
 
 ###
@@ -64,6 +363,15 @@ Content-Type: application/json
 {
   "code": "PRJ-001",
   "name": "Demo Project"
+}
+
+###
+
+POST {{OSTA.API_HostAddress}}/api/v1/projects/{{projectId}}/generate-from-bom
+Content-Type: application/json
+
+{
+  "bomHeaderId": "{{bomHeaderId}}"
 }
 
 ###

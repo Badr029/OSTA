@@ -32,7 +32,13 @@ public class AssembliesController : ControllerBase
         var assemblies = await _context.Assemblies
             .Where(x => x.FinishedGoodId == finishedGoodId)
             .OrderBy(x => x.Code)
-            .Select(x => new AssemblyResponseDto(x.Id, x.Code, x.Name, x.FinishedGoodId))
+            .Select(x => new AssemblyResponseDto(
+                x.Id,
+                x.Code,
+                x.Name,
+                x.FinishedGoodId,
+                x.SourceBomItemId,
+                x.SourceComponentItemMasterId))
             .ToListAsync();
 
         return Ok(assemblies);
@@ -45,7 +51,13 @@ public class AssembliesController : ControllerBase
     {
         var assembly = await _context.Assemblies
             .Where(x => x.FinishedGoodId == finishedGoodId && x.Id == id)
-            .Select(x => new AssemblyResponseDto(x.Id, x.Code, x.Name, x.FinishedGoodId))
+            .Select(x => new AssemblyResponseDto(
+                x.Id,
+                x.Code,
+                x.Name,
+                x.FinishedGoodId,
+                x.SourceBomItemId,
+                x.SourceComponentItemMasterId))
             .FirstOrDefaultAsync();
 
         if (assembly is null)
@@ -60,7 +72,7 @@ public class AssembliesController : ControllerBase
     [ProducesResponseType(typeof(AssemblyResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<AssemblyResponseDto>> Create(Guid finishedGoodId, CreateAssemblyRequestDto request)
+    public async Task<ActionResult<AssemblyResponseDto>> Create(Guid finishedGoodId, [FromBody] CreateAssemblyRequestDto request)
     {
         var finishedGoodExists = await _context.FinishedGoods.AnyAsync(x => x.Id == finishedGoodId);
         if (!finishedGoodExists)
@@ -91,7 +103,9 @@ public class AssembliesController : ControllerBase
             assembly.Id,
             assembly.Code,
             assembly.Name,
-            assembly.FinishedGoodId
+            assembly.FinishedGoodId,
+            assembly.SourceBomItemId,
+            assembly.SourceComponentItemMasterId
         );
 
         return CreatedAtAction(nameof(GetById), new { finishedGoodId, id = assembly.Id }, response);

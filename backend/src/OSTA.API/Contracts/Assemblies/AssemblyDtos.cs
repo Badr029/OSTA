@@ -2,7 +2,14 @@ using System.ComponentModel.DataAnnotations;
 
 namespace OSTA.API.Contracts.Assemblies;
 
-public sealed record AssemblyResponseDto(Guid Id, string Code, string Name, Guid FinishedGoodId);
+public sealed record AssemblyResponseDto(
+    Guid Id,
+    string Code,
+    string Name,
+    Guid FinishedGoodId,
+    Guid? SourceBomItemId,
+    Guid? SourceComponentItemMasterId
+);
 
 public sealed class CreateAssemblyRequestDto
 {
