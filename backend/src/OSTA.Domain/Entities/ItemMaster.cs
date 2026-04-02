@@ -25,4 +25,5 @@ public class ItemMaster
     public ICollection<BomHeader> BomHeaders { get; set; } = new List<BomHeader>();
     public ICollection<BomItem> ComponentBomItems { get; set; } = new List<BomItem>();
     public ICollection<RoutingTemplate> RoutingTemplates { get; set; } = new List<RoutingTemplate>();
+    public ICollection<ItemMaterialRequirement> MaterialRequirements { get; set; } = new List<ItemMaterialRequirement>();
 }

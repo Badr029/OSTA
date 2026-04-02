@@ -4,6 +4,7 @@
 @bomHeaderId = 00000000-0000-0000-0000-000000000000
 @bomItemId = 00000000-0000-0000-0000-000000000000
 @itemMasterId = 00000000-0000-0000-0000-000000000000
+@itemMaterialRequirementId = 00000000-0000-0000-0000-000000000000
 @workCenterId = 00000000-0000-0000-0000-000000000000
 @routingTemplateId = 00000000-0000-0000-0000-000000000000
 @routingOperationId = 00000000-0000-0000-0000-000000000000
@@ -171,6 +172,32 @@ Accept: application/json
 
 ###
 
+GET {{OSTA.API_HostAddress}}/api/v1/item-masters/{{itemMasterId}}/material-requirements
+Accept: application/json
+
+###
+
+POST {{OSTA.API_HostAddress}}/api/v1/item-masters/{{itemMasterId}}/material-requirements
+Content-Type: application/json
+
+{
+  "materialCode": "STL-S355",
+  "requiredQuantity": 1,
+  "uom": "PL",
+  "thicknessMm": 12,
+  "lengthMm": 2400,
+  "widthMm": 1200,
+  "weightKg": 226.08,
+  "notes": "Frame side plate requirement"
+}
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/item-material-requirements/{{itemMaterialRequirementId}}
+Accept: application/json
+
+###
+
 GET {{OSTA.API_HostAddress}}/api/v1/work-centers
 Accept: application/json
 
@@ -249,6 +276,16 @@ Accept: application/json
 
 ###
 
+GET {{OSTA.API_HostAddress}}/api/v1/work-orders/summary
+Accept: application/json
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/work-orders/summary?status=InProgress&isMaterialReady=true
+Accept: application/json
+
+###
+
 POST {{OSTA.API_HostAddress}}/api/v1/work-orders/generate
 Content-Type: application/json
 
@@ -262,6 +299,21 @@ Content-Type: application/json
 ###
 
 GET {{OSTA.API_HostAddress}}/api/v1/work-orders/{{workOrderId}}
+Accept: application/json
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/work-orders/{{workOrderId}}/summary
+Accept: application/json
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/work-orders/{{workOrderId}}/release-readiness
+Accept: application/json
+
+###
+
+POST {{OSTA.API_HostAddress}}/api/v1/work-orders/{{workOrderId}}/release
 Accept: application/json
 
 ###
@@ -407,6 +459,11 @@ Content-Type: application/json
 ###
 
 GET {{OSTA.API_HostAddress}}/api/v1/assemblies/{{assemblyId}}/parts
+Accept: application/json
+
+###
+
+GET {{OSTA.API_HostAddress}}/api/v1/assemblies/{{assemblyId}}/material-readiness
 Accept: application/json
 
 ###

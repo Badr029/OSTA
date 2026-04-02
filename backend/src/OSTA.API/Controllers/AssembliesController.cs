@@ -110,4 +110,76 @@ public class AssembliesController : ControllerBase
 
         return CreatedAtAction(nameof(GetById), new { finishedGoodId, id = assembly.Id }, response);
     }
+
+    [HttpGet("/api/v1/assemblies/{assemblyId:guid}/material-readiness")]
+    [ProducesResponseType(typeof(AssemblyMaterialReadinessResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<AssemblyMaterialReadinessResponseDto>> GetMaterialReadiness(Guid assemblyId)
+    {
+        var assembly = await _context.Assemblies
+            .Where(x => x.Id == assemblyId)
+            .Select(x => new
+            {
+                x.Id,
+                x.Code,
+                x.SourceComponentItemMasterId,
+                SourceComponentItemCode = x.SourceComponentItemMaster != null
+                    ? x.SourceComponentItemMaster.Code
+                    : null
+            })
+            .FirstOrDefaultAsync();
+
+        if (assembly is null)
+        {
+            return NotFound(ApiProblemDetailsFactory.NotFound($"Assembly '{assemblyId}' was not found."));
+        }
+
+        var missingReasons = new List<string>();
+
+        if (assembly.SourceComponentItemMasterId is null)
+        {
+            missingReasons.Add("Assembly is not linked to a source component item master.");
+
+            return Ok(new AssemblyMaterialReadinessResponseDto(
+                assembly.Id,
+                assembly.Code,
+                null,
+                null,
+                false,
+                0,
+                missingReasons,
+                Array.Empty<AssemblyMaterialReadinessRequirementResponseDto>()));
+        }
+
+        var requirements = await _context.ItemMaterialRequirements
+            .Where(x => x.ItemMasterId == assembly.SourceComponentItemMasterId)
+            .OrderBy(x => x.MaterialCode)
+            .ThenBy(x => x.Id)
+            .Select(x => new AssemblyMaterialReadinessRequirementResponseDto(
+                x.Id,
+                x.MaterialCode,
+                x.RequiredQuantity,
+                x.Uom,
+                x.ThicknessMm,
+                x.LengthMm,
+                x.WidthMm,
+                x.WeightKg,
+                x.Notes))
+            .ToListAsync();
+
+        if (requirements.Count == 0)
+        {
+            missingReasons.Add("No material requirements defined for the linked item master.");
+        }
+
+        return Ok(new AssemblyMaterialReadinessResponseDto(
+            assembly.Id,
+            assembly.Code,
+            assembly.SourceComponentItemMasterId,
+            assembly.SourceComponentItemCode,
+            requirements.Count > 0,
+            requirements.Count,
+            missingReasons,
+            requirements));
+    }
 }

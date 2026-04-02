@@ -19,6 +19,68 @@ public sealed record WorkOrderResponseDto(
     int OperationCount
 );
 
+public sealed record WorkOrderReleaseReadinessResponseDto(
+    Guid WorkOrderId,
+    string WorkOrderNumber,
+    string WorkOrderStatus,
+    Guid AssemblyId,
+    string AssemblyCode,
+    bool HasOperations,
+    int OperationCount,
+    bool IsMaterialReady,
+    bool IsReleaseReady,
+    IReadOnlyList<string> BlockingReasons
+);
+
+public sealed record WorkOrderOperationSummaryDto(
+    Guid Id,
+    string OperationNumber,
+    string OperationCode,
+    string OperationName,
+    string WorkCenterCode,
+    string Status,
+    int Sequence,
+    bool IsQcGate
+);
+
+public sealed record WorkOrderSummaryResponseDto(
+    Guid WorkOrderId,
+    string WorkOrderNumber,
+    string Status,
+    string ProjectCode,
+    string FinishedGoodCode,
+    string AssemblyCode,
+    decimal PlannedQuantity,
+    decimal CompletedQuantity,
+    bool IsReleaseReady,
+    bool IsMaterialReady,
+    int TotalOperations,
+    int CompletedOperationsCount,
+    int BlockedOperationsCount,
+    int InProgressOperationsCount,
+    WorkOrderOperationSummaryDto? CurrentOperation,
+    WorkOrderOperationSummaryDto? NextOperation,
+    DateTime? ReleasedAtUtc,
+    DateTime? ClosedAtUtc
+);
+
+public sealed record WorkOrderSummaryListItemDto(
+    Guid WorkOrderId,
+    string WorkOrderNumber,
+    string Status,
+    string ProjectCode,
+    string FinishedGoodCode,
+    string AssemblyCode,
+    decimal PlannedQuantity,
+    decimal CompletedQuantity,
+    bool IsReleaseReady,
+    bool IsMaterialReady,
+    string? CurrentOperationCode,
+    string? CurrentOperationStatus,
+    string? NextOperationCode,
+    DateTime? ReleasedAtUtc
+);
+
 public sealed class GenerateWorkOrderRequestDto
 {
     [Required]

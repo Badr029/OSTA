@@ -15,6 +15,7 @@ public class OstaDbContext : DbContext
     public DbSet<Assembly> Assemblies => Set<Assembly>();
     public DbSet<Part> Parts => Set<Part>();
     public DbSet<ItemMaster> ItemMasters => Set<ItemMaster>();
+    public DbSet<ItemMaterialRequirement> ItemMaterialRequirements => Set<ItemMaterialRequirement>();
     public DbSet<WorkCenter> WorkCenters => Set<WorkCenter>();
     public DbSet<RoutingTemplate> RoutingTemplates => Set<RoutingTemplate>();
     public DbSet<RoutingOperation> RoutingOperations => Set<RoutingOperation>();
@@ -235,6 +236,50 @@ public class OstaDbContext : DbContext
 
             entity.HasIndex(x => x.Code)
                 .IsUnique();
+        });
+
+        modelBuilder.Entity<ItemMaterialRequirement>(entity =>
+        {
+            entity.ToTable("item_material_requirements");
+
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.ItemMasterId)
+                .IsRequired();
+
+            entity.Property(x => x.MaterialCode)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(x => x.RequiredQuantity)
+                .HasPrecision(18, 4)
+                .IsRequired();
+
+            entity.Property(x => x.Uom)
+                .HasMaxLength(20)
+                .IsRequired();
+
+            entity.Property(x => x.ThicknessMm)
+                .HasPrecision(18, 4);
+
+            entity.Property(x => x.LengthMm)
+                .HasPrecision(18, 4);
+
+            entity.Property(x => x.WidthMm)
+                .HasPrecision(18, 4);
+
+            entity.Property(x => x.WeightKg)
+                .HasPrecision(18, 4);
+
+            entity.Property(x => x.Notes)
+                .HasMaxLength(2000);
+
+            entity.HasOne(x => x.ItemMaster)
+                .WithMany(x => x.MaterialRequirements)
+                .HasForeignKey(x => x.ItemMasterId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(x => x.ItemMasterId);
         });
 
         modelBuilder.Entity<WorkCenter>(entity =>
