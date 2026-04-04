@@ -54,16 +54,20 @@ public class WorkOrderOperationsController : ControllerBase
                 $"Work order operation '{id}' cannot be started because its status is '{operation.Status}' instead of 'Ready'."));
         }
 
-        if (operation.WorkOrder.Status != WorkOrderStatus.Released)
+        if (operation.WorkOrder.Status != WorkOrderStatus.Released &&
+            operation.WorkOrder.Status != WorkOrderStatus.InProgress)
         {
             return BadRequest(ApiProblemDetailsFactory.BadRequest(
-                $"Work order operation '{id}' cannot be started because work order '{operation.WorkOrderId}' is '{operation.WorkOrder.Status}' instead of 'Released'."));
+                $"Work order operation '{id}' cannot be started because work order '{operation.WorkOrderId}' is '{operation.WorkOrder.Status}' instead of 'Released' or 'InProgress'."));
         }
 
         operation.Status = WorkOrderOperationStatus.InProgress;
         operation.StartedAtUtc = DateTime.UtcNow;
 
-        operation.WorkOrder.Status = WorkOrderStatus.InProgress;
+        if (operation.WorkOrder.Status == WorkOrderStatus.Released)
+        {
+            operation.WorkOrder.Status = WorkOrderStatus.InProgress;
+        }
 
         await _context.SaveChangesAsync();
 

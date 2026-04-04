@@ -11,6 +11,26 @@ public sealed record WorkCenterResponseDto(
     bool IsActive
 );
 
+public sealed record WorkCenterQueueItemDto(
+    Guid WorkOrderId,
+    string WorkOrderNumber,
+    string WorkOrderStatus,
+    string ProjectCode,
+    string FinishedGoodCode,
+    string AssemblyCode,
+    Guid OperationId,
+    string OperationNumber,
+    string OperationCode,
+    string OperationName,
+    string OperationStatus,
+    decimal PlannedQuantity,
+    decimal CompletedQuantity,
+    DateTime? ReleasedAtUtc,
+    DateTime? StartedAtUtc,
+    bool IsQcGate,
+    int Sequence
+);
+
 public sealed class CreateWorkCenterRequestDto
 {
     [Required]

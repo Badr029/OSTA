@@ -8,6 +8,7 @@ obj/
 dist/
 build/
 out/
+backend/artifacts/
 
 # Logs
 *.log

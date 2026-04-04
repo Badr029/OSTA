@@ -221,6 +221,11 @@ Accept: application/json
 
 ###
 
+GET {{OSTA.API_HostAddress}}/api/v1/work-centers/{{workCenterId}}/queue
+Accept: application/json
+
+###
+
 GET {{OSTA.API_HostAddress}}/api/v1/routing-templates
 Accept: application/json
 

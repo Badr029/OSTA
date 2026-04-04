@@ -48,6 +48,53 @@ public class WorkCentersController : ControllerBase
         return Ok(workCenter);
     }
 
+    [HttpGet("{id:guid}/queue")]
+    [ProducesResponseType(typeof(IEnumerable<WorkCenterQueueItemDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IEnumerable<WorkCenterQueueItemDto>>> GetQueue(Guid id)
+    {
+        var workCenterExists = await _context.WorkCenters.AnyAsync(x => x.Id == id);
+
+        if (!workCenterExists)
+        {
+            return NotFound(ApiProblemDetailsFactory.NotFound($"Work center '{id}' was not found."));
+        }
+
+        var queueItems = await _context.WorkOrderOperations
+            .Where(x => x.WorkCenterId == id)
+            .Where(x =>
+                (x.WorkOrder.Status == WorkOrderStatus.Released || x.WorkOrder.Status == WorkOrderStatus.InProgress) &&
+                (x.Status == WorkOrderOperationStatus.Ready || x.Status == WorkOrderOperationStatus.InProgress))
+            .Select(x => new WorkCenterQueueItemDto(
+                x.WorkOrderId,
+                x.WorkOrder.WorkOrderNumber,
+                x.WorkOrder.Status.ToString(),
+                x.WorkOrder.Project.Code,
+                x.WorkOrder.FinishedGood.Code,
+                x.WorkOrder.Assembly.Code,
+                x.Id,
+                x.OperationNumber,
+                x.OperationCode,
+                x.OperationName,
+                x.Status.ToString(),
+                x.PlannedQuantity,
+                x.CompletedQuantity,
+                x.WorkOrder.ReleasedAtUtc,
+                x.StartedAtUtc,
+                x.IsQcGate,
+                x.Sequence))
+            .ToListAsync();
+
+        var orderedQueueItems = queueItems
+            .OrderBy(x => x.OperationStatus == WorkOrderOperationStatus.InProgress.ToString() ? 0 : 1)
+            .ThenBy(x => x.ReleasedAtUtc ?? DateTime.MaxValue)
+            .ThenBy(x => x.WorkOrderNumber)
+            .ThenBy(x => x.Sequence)
+            .ToList();
+
+        return Ok(orderedQueueItems);
+    }
+
     [HttpPost]
     [ProducesResponseType(typeof(WorkCenterResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
