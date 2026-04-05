@@ -409,6 +409,11 @@ Accept: application/json
 
 ###
 
+POST {{OSTA.API_HostAddress}}/dev/seeds/qcc-supervisor-demo
+Accept: application/json
+
+###
+
 GET {{OSTA.API_HostAddress}}/api/v1/projects
 Accept: application/json
 
