@@ -152,7 +152,7 @@ export function WorkOrderDetailPage() {
 
   return (
     <main className="page-shell">
-      <header className="topbar">
+      <header className="topbar topbar--page-action">
         <div className="page-head-stack">
           <Breadcrumbs
             items={[
@@ -165,23 +165,36 @@ export function WorkOrderDetailPage() {
             <span className="eyebrow">Supervisor Console</span>
             <h1 className="page-title">Work Order Detail</h1>
             <p className="page-subtitle">
-              Inspect one work order, release it when ready, and move each operation through the route with confidence.
+              Inspect the current execution state, decide whether release still applies, and move the route forward one operation at a time.
             </p>
           </div>
         </div>
-        <Link className="text-link" to="/supervisor/work-orders">
-          Back to board
-        </Link>
+        <div className="page-header-actions">
+          {summary && releaseReadiness && summary.status === 'Planned' ? (
+            <button
+              type="button"
+              className="action-button"
+              disabled={!releaseReadiness.isReleaseReady || releaseMutation.isPending}
+              onClick={() => releaseMutation.mutate()}
+            >
+              {releaseMutation.isPending ? 'Releasing...' : 'Release Work Order'}
+            </button>
+          ) : (
+            <Link className="text-link text-link--button" to="/supervisor/work-orders">
+              Back to Work Orders
+            </Link>
+          )}
+        </div>
       </header>
 
       {isLoading ? (
-        <section className="panel">
-          <div className="center-message">Loading work order state...</div>
+        <section className="panel panel-pad panel--section">
+          <div className="loading-box loading-box--compact">Loading work order state...</div>
         </section>
       ) : null}
 
       {isError ? (
-        <section className="panel panel-pad">
+        <section className="panel panel-pad panel--section">
           <div className="error-box">
             Unable to load this work order right now.
             <div className="muted">{getErrorMessage(pageError)}</div>
@@ -190,31 +203,30 @@ export function WorkOrderDetailPage() {
       ) : null}
 
       {!isLoading && !isError && summary && releaseReadiness ? (
-        <section className="detail-shell">
-          <section className="panel panel-pad">
-            <div className="detail-header">
-              <div>
-                <span className="eyebrow">Work Order</span>
-                <h2 className="detail-title">{summary.workOrderNumber}</h2>
-                <p className="page-subtitle">
-                  {summary.projectCode} / {summary.finishedGoodCode} / {summary.assemblyCode}
-                </p>
-              </div>
-
-              <div className="badge-row">
-                <StatusBadge status={summary.status} />
-                <StatusBadge
-                  label={`Material ${summary.isMaterialReady ? 'Ready' : 'Missing'}`}
-                  tone={summary.isMaterialReady ? 'ready' : 'missing'}
-                />
-                <StatusBadge
-                  label={`Release ${releaseState!.label}`}
-                  tone={releaseState!.tone}
-                />
-              </div>
+        <section className="detail-shell detail-shell--tight">
+          <section className="panel panel-pad panel--section">
+            <div className="section-header-compact">
+              <span className="eyebrow">Context</span>
+              <h2 className="section-title">Work order and product context</h2>
             </div>
 
-            <div className="detail-grid">
+            <div className="detail-grid detail-grid--dense">
+              <div className="detail-stat">
+                <span>Work Order</span>
+                <strong>{summary.workOrderNumber}</strong>
+              </div>
+              <div className="detail-stat">
+                <span>Project</span>
+                <strong>{summary.projectCode}</strong>
+              </div>
+              <div className="detail-stat">
+                <span>Finished Good</span>
+                <strong>{summary.finishedGoodCode}</strong>
+              </div>
+              <div className="detail-stat">
+                <span>Assembly</span>
+                <strong>{summary.assemblyCode}</strong>
+              </div>
               <div className="detail-stat">
                 <span>Planned Qty</span>
                 <strong>{formatQuantity(summary.plannedQuantity)}</strong>
@@ -223,7 +235,31 @@ export function WorkOrderDetailPage() {
                 <span>Completed Qty</span>
                 <strong>{formatQuantity(summary.completedQuantity)}</strong>
               </div>
-              <div className="detail-stat">
+            </div>
+
+            <div className="status-strip">
+              <div className="status-strip__item">
+                <span>Status</span>
+                <strong className="detail-badge">
+                  <StatusBadge status={summary.status} />
+                </strong>
+              </div>
+              <div className="status-strip__item">
+                <span>Material</span>
+                <strong className="detail-badge">
+                  <StatusBadge
+                    label={summary.isMaterialReady ? 'Ready' : 'Missing'}
+                    tone={summary.isMaterialReady ? 'ready' : 'missing'}
+                  />
+                </strong>
+              </div>
+              <div className="status-strip__item">
+                <span>Release</span>
+                <strong className="detail-badge">
+                  <StatusBadge label={releaseState!.label} tone={releaseState!.tone} />
+                </strong>
+              </div>
+              <div className="status-strip__item">
                 <span>Current Operation</span>
                 <strong>
                   {summary.currentOperation?.operationCode ??
@@ -232,45 +268,14 @@ export function WorkOrderDetailPage() {
                       : 'Waiting')}
                 </strong>
               </div>
-              <div className="detail-stat">
+              <div className="status-strip__item">
                 <span>Next Operation</span>
                 <strong>{summary.nextOperation?.operationCode ?? 'None'}</strong>
               </div>
-              <div className="detail-stat">
+              <div className="status-strip__item">
                 <span>Released At</span>
                 <strong>{formatDateTime(summary.releasedAtUtc)}</strong>
               </div>
-              <div className="detail-stat">
-                <span>Closed At</span>
-                <strong>{formatDateTime(summary.closedAtUtc)}</strong>
-              </div>
-            </div>
-          </section>
-
-          <section className="panel panel-pad">
-            <div className="action-card">
-              <div>
-                <span className="eyebrow">Release Control</span>
-                <h3 className="section-title">Move this work order into production</h3>
-                <p className="page-subtitle">
-                  Release only when routing exists, material definition is ready, and the work order is still planned.
-                </p>
-              </div>
-
-              {summary.status === 'Planned' ? (
-                <button
-                  type="button"
-                  className="action-button"
-                  disabled={!releaseReadiness.isReleaseReady || releaseMutation.isPending}
-                  onClick={() => releaseMutation.mutate()}
-                >
-                  {releaseMutation.isPending ? 'Releasing...' : 'Release Work Order'}
-                </button>
-              ) : (
-                <div className="info-box">
-                  Release no longer applies once a work order has moved beyond the planned state.
-                </div>
-              )}
             </div>
 
             {summary.status === 'Planned' && releaseReadiness.blockingReasons.length > 0 ? (
@@ -284,20 +289,26 @@ export function WorkOrderDetailPage() {
               </div>
             ) : null}
 
+            {summary.status !== 'Planned' ? (
+              <div className="info-box info-box--full">
+                Release is only relevant while the work order is still planned. This work order is already operating in its current lifecycle state.
+              </div>
+            ) : null}
+
             {actionSuccess ? <div className="success-box">{actionSuccess}</div> : null}
             {actionError ? <div className="error-box">{actionError}</div> : null}
           </section>
 
-          <section className="panel">
-            <div className="panel-pad operations-head">
-              <div>
+          <section className="panel panel--section">
+            <div className="panel-pad section-head-row">
+              <div className="section-header-compact">
                 <span className="eyebrow">Operations</span>
-                <h3 className="section-title">Run the route step by step</h3>
+                <h2 className="section-title">Execution route</h2>
               </div>
-              <div className="badge-row">
-                <span className="badge badge--ready">{summary.totalOperations} Total</span>
-                <span className="badge badge--completed">{summary.completedOperationsCount} Completed</span>
-                <span className="badge badge--blocked">{summary.blockedOperationsCount} Blocked</span>
+              <div className="badge-row badge-row--compact">
+                <StatusBadge label={`${summary.totalOperations} Total`} tone="neutral" />
+                <StatusBadge label={`${summary.completedOperationsCount} Completed`} tone="completed" />
+                <StatusBadge label={`${summary.blockedOperationsCount} Blocked`} tone="blocked" />
               </div>
             </div>
 

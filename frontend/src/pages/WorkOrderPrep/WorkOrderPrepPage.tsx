@@ -166,7 +166,7 @@ export function WorkOrderPrepPage() {
 
   return (
     <main className="page-shell">
-      <header className="topbar">
+      <header className="topbar topbar--page-action">
         <div className="page-head-stack">
           <Breadcrumbs
             items={[
@@ -178,25 +178,45 @@ export function WorkOrderPrepPage() {
             <span className="eyebrow">Planning Console</span>
             <h1 className="page-title">Work Order Prep</h1>
             <p className="page-subtitle">
-              Move cleanly from planning into execution by checking readiness, generating the work order, and releasing it when the assembly is ready.
+              Move a prepared assembly into execution with one stable planning flow: confirm context, review readiness, generate the work order, then release it.
             </p>
           </div>
         </div>
+        <div className="page-header-actions">
+          {!existingWorkOrder ? (
+            <button
+              type="button"
+              className="action-button"
+              disabled={!selectedAssembly || generateMutation.isPending}
+              onClick={() => generateMutation.mutate()}
+            >
+              {generateMutation.isPending ? 'Generating...' : 'Generate Work Order'}
+            </button>
+          ) : existingWorkOrder.status === 'Planned' ? (
+            <button
+              type="button"
+              className="action-button"
+              disabled={!releaseReadinessQuery.data?.isReleaseReady || releaseMutation.isPending}
+              onClick={() => releaseMutation.mutate()}
+            >
+              {releaseMutation.isPending ? 'Releasing...' : 'Release Work Order'}
+            </button>
+          ) : (
+            <Link className="text-link text-link--button" to={`/supervisor/work-orders/${existingWorkOrder.workOrderId}`}>
+              Open WO Detail
+            </Link>
+          )}
+        </div>
       </header>
 
-      <section className="detail-shell">
-        <section className="panel panel-pad">
-          <div className="import-section-head">
-            <div>
-              <span className="eyebrow">Project Context</span>
-              <h2 className="section-title">Choose project and assembly</h2>
-              <p className="page-subtitle">
-                Start in planning context, then prepare the exact assembly that should move into execution.
-              </p>
-            </div>
+      <section className="detail-shell detail-shell--tight">
+        <section className="panel panel-pad panel--section">
+          <div className="section-header-compact">
+            <span className="eyebrow">Context</span>
+            <h2 className="section-title">Project and assembly</h2>
           </div>
 
-          <div className="import-form-grid">
+          <div className="context-grid">
             <div className="field">
               <label htmlFor="prep-project-selector">Project</label>
               <select
@@ -243,7 +263,7 @@ export function WorkOrderPrepPage() {
               {finishedGoodsError ? <span className="muted">{finishedGoodsError}</span> : null}
             </div>
 
-            <div className="field field--full">
+            <div className="field">
               <label htmlFor="prep-assembly-selector">Assembly</label>
               <select
                 id="prep-assembly-selector"
@@ -266,22 +286,17 @@ export function WorkOrderPrepPage() {
             </div>
           </div>
 
-          {(projectsQuery.isLoading || finishedGoodsQuery.isLoading || assembliesQuery.isLoading) ? (
-            <div className="loading-box">
+          {projectsQuery.isLoading || finishedGoodsQuery.isLoading || assembliesQuery.isLoading ? (
+            <div className="loading-box loading-box--compact">
               Refreshing project context so you can prepare the right assembly for execution.
             </div>
           ) : null}
         </section>
 
-        <section className="panel panel-pad">
-          <div className="import-section-head">
-            <div>
-              <span className="eyebrow">Linked Source Item</span>
-              <h2 className="section-title">Product-definition source for this assembly</h2>
-              <p className="page-subtitle">
-                This is the linked source item that material readiness and routing are evaluated against.
-              </p>
-            </div>
+        <section className="panel panel-pad panel--section">
+          <div className="section-header-compact">
+            <span className="eyebrow">Status</span>
+            <h2 className="section-title">Preparation status</h2>
           </div>
 
           {!selectedAssembly ? (
@@ -289,7 +304,7 @@ export function WorkOrderPrepPage() {
           ) : null}
 
           {itemMastersQuery.isLoading && selectedAssembly ? (
-            <div className="loading-box">Resolving the linked source item master for this assembly.</div>
+            <div className="loading-box loading-box--compact">Resolving linked source item master...</div>
           ) : null}
 
           {linkedItemError && selectedAssembly ? (
@@ -301,32 +316,71 @@ export function WorkOrderPrepPage() {
 
           {selectedAssembly && !itemMastersQuery.isLoading && !linkedItemError ? (
             linkedItemMaster ? (
-              <div className="detail-grid">
-                <div className="detail-stat">
-                  <span>Project</span>
-                  <strong>{selectedProject?.code ?? '-'}</strong>
+              <>
+                <div className="detail-grid detail-grid--dense">
+                  <div className="detail-stat">
+                    <span>Project</span>
+                    <strong>{selectedProject?.code ?? '-'}</strong>
+                  </div>
+                  <div className="detail-stat">
+                    <span>Finished Good</span>
+                    <strong>{selectedFinishedGood?.code ?? '-'}</strong>
+                  </div>
+                  <div className="detail-stat">
+                    <span>Assembly</span>
+                    <strong>{selectedAssembly.code}</strong>
+                  </div>
+                  <div className="detail-stat">
+                    <span>Linked Item</span>
+                    <strong>{linkedItemMaster.code}</strong>
+                  </div>
+                  <div className="detail-stat">
+                    <span>Item Name</span>
+                    <strong>{linkedItemMaster.name}</strong>
+                  </div>
+                  <div className="detail-stat">
+                    <span>Revision</span>
+                    <strong>{linkedItemMaster.revision}</strong>
+                  </div>
                 </div>
-                <div className="detail-stat">
-                  <span>Finished Good</span>
-                  <strong>{selectedFinishedGood?.code ?? '-'}</strong>
+
+                <div className="status-strip status-strip--compact">
+                  <div className="status-strip__item">
+                    <span>Material</span>
+                    <strong className="detail-badge">
+                      {materialReadinessQuery.isLoading
+                        ? <StatusBadge label="Checking" tone="neutral" />
+                        : materialReadinessQuery.data?.isMaterialReady
+                          ? <StatusBadge label="Ready" tone="ready" />
+                          : <StatusBadge label="Missing" tone="missing" />}
+                    </strong>
+                  </div>
+                  <div className="status-strip__item">
+                    <span>Requirements</span>
+                    <strong>{materialReadinessQuery.data?.materialRequirementCount ?? 0}</strong>
+                  </div>
+                  <div className="status-strip__item">
+                    <span>Routing</span>
+                    <strong className="detail-badge">
+                      <StatusBadge label={routingExists ? 'Ready' : 'Missing'} tone={routingExists ? 'ready' : 'missing'} />
+                    </strong>
+                  </div>
+                  <div className="status-strip__item">
+                    <span>Route Steps</span>
+                    <strong>{routeOperationCount}</strong>
+                  </div>
+                  <div className="status-strip__item">
+                    <span>Work Order</span>
+                    <strong>{existingWorkOrder?.workOrderNumber ?? 'Not generated'}</strong>
+                  </div>
+                  <div className="status-strip__item">
+                    <span>WO Status</span>
+                    <strong className="detail-badge">
+                      {existingWorkOrder ? <StatusBadge status={existingWorkOrder.status} /> : <StatusBadge label="Missing" tone="missing" />}
+                    </strong>
+                  </div>
                 </div>
-                <div className="detail-stat">
-                  <span>Assembly</span>
-                  <strong>{selectedAssembly.code}</strong>
-                </div>
-                <div className="detail-stat">
-                  <span>Linked Item Master</span>
-                  <strong>{linkedItemMaster.code}</strong>
-                </div>
-                <div className="detail-stat">
-                  <span>Item Name</span>
-                  <strong>{linkedItemMaster.name}</strong>
-                </div>
-                <div className="detail-stat">
-                  <span>Revision</span>
-                  <strong>{linkedItemMaster.revision}</strong>
-                </div>
-              </div>
+              </>
             ) : (
               <div className="warning-box">
                 <strong>No linked source item master</strong>
@@ -336,114 +390,17 @@ export function WorkOrderPrepPage() {
               </div>
             )
           ) : null}
-        </section>
-
-        <section className="panel panel-pad">
-          <div className="import-section-head">
-            <div>
-              <span className="eyebrow">Preparation Status</span>
-              <h2 className="section-title">Readiness before generation</h2>
-              <p className="page-subtitle">
-                Check the two core prerequisites first: material definition and routing availability.
-              </p>
-            </div>
-          </div>
-
-          <div className="detail-grid">
-            <div className="detail-stat">
-              <span>Material Readiness</span>
-              <strong className="detail-badge">
-                {materialReadinessQuery.isLoading
-                  ? <StatusBadge label="Checking" tone="neutral" />
-                  : materialReadinessQuery.data?.isMaterialReady
-                    ? <StatusBadge label="Ready" tone="ready" />
-                    : <StatusBadge label="Missing" tone="missing" />}
-              </strong>
-            </div>
-            <div className="detail-stat">
-              <span>Material Requirements</span>
-              <strong>{materialReadinessQuery.data?.materialRequirementCount ?? 0}</strong>
-            </div>
-            <div className="detail-stat">
-              <span>Routing Exists</span>
-              <strong className="detail-badge">
-                <StatusBadge label={routingExists ? 'Ready' : 'Missing'} tone={routingExists ? 'ready' : 'missing'} />
-              </strong>
-            </div>
-            <div className="detail-stat">
-              <span>Route Operations</span>
-              <strong>{routeOperationCount}</strong>
-            </div>
-            <div className="detail-stat">
-              <span>Existing Work Order</span>
-              <strong>{existingWorkOrder ? existingWorkOrder.workOrderNumber : 'None'}</strong>
-            </div>
-            <div className="detail-stat">
-              <span>Current WO Status</span>
-              <strong className="detail-badge">
-                {existingWorkOrder ? <StatusBadge status={existingWorkOrder.status} /> : <StatusBadge label="Missing" tone="missing" />}
-              </strong>
-            </div>
-          </div>
 
           {materialReadinessError ? <div className="warning-box">{materialReadinessError}</div> : null}
           {routingTemplatesError ? <div className="warning-box">{routingTemplatesError}</div> : null}
           {workOrdersError ? <div className="warning-box">{workOrdersError}</div> : null}
         </section>
 
-        <section className="panel panel-pad">
-          <div className="import-section-head">
-            <div>
-              <span className="eyebrow">Work Order Action</span>
-              <h2 className="section-title">Generate the work order</h2>
-              <p className="page-subtitle">
-                Create the execution record for this assembly once the planner is satisfied with the setup state.
-              </p>
-            </div>
-          </div>
-
-          {!existingWorkOrder ? (
-            <>
-              <div className="center-message">No work order exists yet for this assembly.</div>
-              <div className="button-row">
-                <button
-                  type="button"
-                  className="action-button"
-                  disabled={!selectedAssembly || generateMutation.isPending}
-                  onClick={() => generateMutation.mutate()}
-                >
-                  {generateMutation.isPending ? 'Generating...' : 'Generate Work Order'}
-                </button>
-              </div>
-            </>
-          ) : (
-            <div className="detail-grid">
-              <div className="detail-stat">
-                <span>Work Order</span>
-                <strong>{existingWorkOrder.workOrderNumber}</strong>
-              </div>
-                <div className="detail-stat">
-                  <span>Status</span>
-                  <strong className="detail-badge">
-                    <StatusBadge status={existingWorkOrder.status} />
-                  </strong>
-                </div>
-              <div className="detail-stat">
-                <span>Current Operation</span>
-                <strong>{existingWorkOrder.currentOperationCode ?? 'Waiting'}</strong>
-              </div>
-            </div>
-          )}
-        </section>
-
-        <section className="panel panel-pad">
-          <div className="import-section-head">
-            <div>
-              <span className="eyebrow">Release Readiness</span>
-              <h2 className="section-title">Release into execution</h2>
-              <p className="page-subtitle">
-                Once the work order exists, confirm release readiness and release it directly from planning if appropriate.
-              </p>
+        <section className="panel panel--section">
+          <div className="panel-pad section-head-row">
+            <div className="section-header-compact">
+              <span className="eyebrow">Execution Transition</span>
+              <h2 className="section-title">Generate and release</h2>
             </div>
             {existingWorkOrder ? (
               <Link className="text-link text-link--button" to={`/supervisor/work-orders/${existingWorkOrder.workOrderId}`}>
@@ -452,81 +409,74 @@ export function WorkOrderPrepPage() {
             ) : null}
           </div>
 
-          {!existingWorkOrder ? (
-            <div className="center-message">Generate a work order first to check release readiness.</div>
-          ) : null}
-
-          {existingWorkOrder && releaseReadinessQuery.isLoading ? (
-            <div className="center-message">Checking release readiness...</div>
-          ) : null}
-
-          {existingWorkOrder && releaseReadinessError ? (
-            <div className="error-box">{releaseReadinessError}</div>
-          ) : null}
-
-          {existingWorkOrder && !releaseReadinessQuery.isLoading && !releaseReadinessError && releaseReadinessQuery.data ? (
-            <>
-              <div className="detail-grid">
-                <div className="detail-stat">
-                  <span>Release Ready</span>
-                  <strong className="detail-badge">
+          <div className="panel-pad section-stack">
+            <div className="detail-grid detail-grid--dense">
+              <div className="detail-stat">
+                <span>Work Order</span>
+                <strong>{existingWorkOrder?.workOrderNumber ?? 'Not generated'}</strong>
+              </div>
+              <div className="detail-stat">
+                <span>Current Operation</span>
+                <strong>{existingWorkOrder?.currentOperationCode ?? 'Waiting'}</strong>
+              </div>
+              <div className="detail-stat">
+                <span>Next Operation</span>
+                <strong>{existingWorkOrder?.nextOperationCode ?? 'None'}</strong>
+              </div>
+              <div className="detail-stat">
+                <span>Release State</span>
+                <strong className="detail-badge">
+                  {existingWorkOrder && releaseReadinessQuery.data ? (
                     <StatusBadge
                       label={releaseReadinessQuery.data.isReleaseReady ? 'Ready' : 'Blocked'}
                       tone={releaseReadinessQuery.data.isReleaseReady ? 'ready' : 'blocked'}
                     />
-                  </strong>
-                </div>
-                <div className="detail-stat">
-                  <span>Has Operations</span>
-                  <strong>{releaseReadinessQuery.data.hasOperations ? 'Yes' : 'No'}</strong>
-                </div>
-                <div className="detail-stat">
-                  <span>Operation Count</span>
-                  <strong>{releaseReadinessQuery.data.operationCount}</strong>
-                </div>
-                <div className="detail-stat">
-                  <span>Material Ready</span>
-                  <strong className="detail-badge">
-                    <StatusBadge
-                      label={releaseReadinessQuery.data.isMaterialReady ? 'Ready' : 'Missing'}
-                      tone={releaseReadinessQuery.data.isMaterialReady ? 'ready' : 'missing'}
-                    />
-                  </strong>
-                </div>
-                <div className="detail-stat">
-                  <span>WO Status</span>
-                  <strong className="detail-badge">
-                    <StatusBadge status={releaseReadinessQuery.data.workOrderStatus} />
-                  </strong>
-                </div>
+                  ) : (
+                    <StatusBadge label="Pending" tone="neutral" />
+                  )}
+                </strong>
               </div>
-
-              {releaseReadinessQuery.data.blockingReasons.length > 0 ? (
-                <div className="warning-box">
-                  <strong>Release is blocked</strong>
-                  <ul className="reason-list">
-                    {releaseReadinessQuery.data.blockingReasons.map((reason) => (
-                      <li key={reason}>{reason}</li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-
-              <div className="button-row">
-                <button
-                  type="button"
-                  className="action-button"
-                  disabled={!releaseReadinessQuery.data.isReleaseReady || releaseMutation.isPending}
-                  onClick={() => releaseMutation.mutate()}
-                >
-                  {releaseMutation.isPending ? 'Releasing...' : 'Release Work Order'}
-                </button>
+              <div className="detail-stat">
+                <span>Operation Count</span>
+                <strong>{releaseReadinessQuery.data?.operationCount ?? routeOperationCount}</strong>
               </div>
-            </>
-          ) : null}
+              <div className="detail-stat">
+                <span>Material Ready</span>
+                <strong className="detail-badge">
+                  <StatusBadge
+                    label={releaseReadinessQuery.data?.isMaterialReady ? 'Ready' : 'Missing'}
+                    tone={releaseReadinessQuery.data?.isMaterialReady ? 'ready' : 'missing'}
+                  />
+                </strong>
+              </div>
+            </div>
 
-          {successMessage ? <div className="success-box">{successMessage}</div> : null}
-          {pageError ? <div className="error-box">{pageError}</div> : null}
+            {!existingWorkOrder ? (
+              <div className="empty-state-inline">
+                No work order exists yet for this assembly. Generate it when the preparation state looks correct.
+              </div>
+            ) : null}
+
+            {existingWorkOrder && releaseReadinessQuery.isLoading ? (
+              <div className="loading-box loading-box--compact">Checking release readiness...</div>
+            ) : null}
+
+            {existingWorkOrder && releaseReadinessError ? <div className="error-box">{releaseReadinessError}</div> : null}
+
+            {existingWorkOrder && !releaseReadinessQuery.isLoading && !releaseReadinessError && releaseReadinessQuery.data?.blockingReasons.length ? (
+              <div className="warning-box">
+                <strong>Release is blocked</strong>
+                <ul className="reason-list">
+                  {releaseReadinessQuery.data.blockingReasons.map((reason) => (
+                    <li key={reason}>{reason}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {successMessage ? <div className="success-box">{successMessage}</div> : null}
+            {pageError ? <div className="error-box">{pageError}</div> : null}
+          </div>
         </section>
       </section>
     </main>
