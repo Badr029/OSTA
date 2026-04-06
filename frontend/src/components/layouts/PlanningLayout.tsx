@@ -31,6 +31,12 @@ export function PlanningLayout() {
             Material Requirements
           </NavLink>
           <NavLink
+            to="/planning/work-centers"
+            className={({ isActive }) => `console-nav-link ${isActive ? 'console-nav-link--active' : ''}`}
+          >
+            Work Centers
+          </NavLink>
+          <NavLink
             to="/planning/routing-setup"
             className={({ isActive }) => `console-nav-link ${isActive ? 'console-nav-link--active' : ''}`}
           >

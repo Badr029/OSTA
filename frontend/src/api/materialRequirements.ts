@@ -7,6 +7,7 @@ import type {
   ItemMasterSummary,
   ItemMaterialRequirement,
   ProjectSummary,
+  UpdateItemMaterialRequirementInput,
 } from '../types/materialRequirements'
 
 export async function getProjects(): Promise<ProjectSummary[]> {
@@ -50,4 +51,23 @@ export async function createItemMaterialRequirement(
     input,
   )
   return response.data
+}
+
+export async function updateItemMaterialRequirement(
+  itemMasterId: string,
+  requirementId: string,
+  input: UpdateItemMaterialRequirementInput,
+): Promise<ItemMaterialRequirement> {
+  const response = await apiClient.put<ItemMaterialRequirement>(
+    `/item-masters/${itemMasterId}/material-requirements/${requirementId}`,
+    input,
+  )
+  return response.data
+}
+
+export async function deleteItemMaterialRequirement(
+  itemMasterId: string,
+  requirementId: string,
+): Promise<void> {
+  await apiClient.delete(`/item-masters/${itemMasterId}/material-requirements/${requirementId}`)
 }

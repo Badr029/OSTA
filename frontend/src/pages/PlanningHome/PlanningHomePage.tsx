@@ -55,6 +55,19 @@ export function PlanningHomePage() {
 
         <article className="panel panel-pad home-card">
           <div>
+            <span className="eyebrow">Configuration</span>
+            <h2 className="section-title">Work Centers</h2>
+            <p className="page-subtitle">
+              Maintain the active stations planners can assign to route steps without deleting work center history.
+            </p>
+          </div>
+          <Link className="text-link text-link--button" to="/planning/work-centers">
+            Open Work Centers
+          </Link>
+        </article>
+
+        <article className="panel panel-pad home-card">
+          <div>
             <span className="eyebrow">Routing</span>
             <h2 className="section-title">Routing Setup</h2>
             <p className="page-subtitle">

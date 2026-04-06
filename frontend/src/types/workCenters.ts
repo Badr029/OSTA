@@ -7,6 +7,14 @@ export interface WorkCenter {
   isActive: boolean
 }
 
+export interface WorkCenterInput {
+  code: string
+  name: string
+  department: string
+  hourlyRate: number
+  isActive: boolean
+}
+
 export interface WorkCenterQueueItem {
   workOrderId: string
   workOrderNumber: string

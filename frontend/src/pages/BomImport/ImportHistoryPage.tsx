@@ -55,7 +55,7 @@ export function ImportHistoryPage() {
           </div>
 
           {batchesQuery.isLoading ? (
-            <div className="center-message">Loading import history...</div>
+            <div className="loading-box">Loading import history...</div>
           ) : null}
 
           {batchesQuery.isError ? (

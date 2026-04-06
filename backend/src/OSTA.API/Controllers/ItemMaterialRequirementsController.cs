@@ -94,6 +94,57 @@ public class ItemMaterialRequirementsController : ControllerBase
             MapRequirement(requirement));
     }
 
+    [HttpPut("api/v1/item-masters/{itemMasterId:guid}/material-requirements/{id:guid}")]
+    [ProducesResponseType(typeof(ItemMaterialRequirementResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ItemMaterialRequirementResponseDto>> Update(
+        Guid itemMasterId,
+        Guid id,
+        [FromBody] UpdateItemMaterialRequirementRequestDto request)
+    {
+        var requirement = await _context.ItemMaterialRequirements
+            .FirstOrDefaultAsync(x => x.ItemMasterId == itemMasterId && x.Id == id);
+
+        if (requirement is null)
+        {
+            return NotFound(ApiProblemDetailsFactory.NotFound(
+                $"Item material requirement '{id}' was not found for item master '{itemMasterId}'."));
+        }
+
+        requirement.MaterialCode = request.MaterialCode.Trim();
+        requirement.RequiredQuantity = request.RequiredQuantity;
+        requirement.Uom = request.Uom.Trim();
+        requirement.ThicknessMm = request.ThicknessMm;
+        requirement.LengthMm = request.LengthMm;
+        requirement.WidthMm = request.WidthMm;
+        requirement.WeightKg = request.WeightKg;
+        requirement.Notes = NormalizeOptional(request.Notes);
+
+        await _context.SaveChangesAsync();
+
+        return Ok(MapRequirement(requirement));
+    }
+
+    [HttpDelete("api/v1/item-masters/{itemMasterId:guid}/material-requirements/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(Guid itemMasterId, Guid id)
+    {
+        var requirement = await _context.ItemMaterialRequirements
+            .FirstOrDefaultAsync(x => x.ItemMasterId == itemMasterId && x.Id == id);
+
+        if (requirement is null)
+        {
+            return NotFound(ApiProblemDetailsFactory.NotFound(
+                $"Item material requirement '{id}' was not found for item master '{itemMasterId}'."));
+        }
+
+        _context.ItemMaterialRequirements.Remove(requirement);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
     private static ItemMaterialRequirementResponseDto MapRequirement(ItemMaterialRequirement requirement)
     {
         return new ItemMaterialRequirementResponseDto(

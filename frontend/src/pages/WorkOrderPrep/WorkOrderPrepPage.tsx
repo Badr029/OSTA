@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { AxiosError } from 'axios'
 import { Link } from 'react-router-dom'
+import { Breadcrumbs } from '../../components/ui/Breadcrumbs'
+import { StatusBadge } from '../../components/ui/StatusBadge'
 import { generateWorkOrder, releaseWorkOrder } from '../../api/workOrders'
 import { useAssemblyMaterialReadiness } from '../../features/material-requirements/useAssemblyMaterialReadiness'
 import { useFinishedGoodAssemblies } from '../../features/material-requirements/useFinishedGoodAssemblies'
@@ -23,16 +25,6 @@ function getErrorMessage(error: unknown) {
   }
 
   return 'Unknown error'
-}
-
-function formatStatusLabel(value: string | null | undefined) {
-  if (!value) {
-    return 'Waiting'
-  }
-
-  return value
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/^Qc\b/i, 'QC')
 }
 
 export function WorkOrderPrepPage() {
@@ -175,12 +167,20 @@ export function WorkOrderPrepPage() {
   return (
     <main className="page-shell">
       <header className="topbar">
-        <div className="brand-block">
-          <span className="eyebrow">Planning Console</span>
-          <h1 className="page-title">Work Order Prep</h1>
-          <p className="page-subtitle">
-            Move cleanly from planning into execution by checking readiness, generating the work order, and releasing it when the assembly is ready.
-          </p>
+        <div className="page-head-stack">
+          <Breadcrumbs
+            items={[
+              { label: 'Planning', to: '/planning' },
+              { label: 'Work Order Prep' },
+            ]}
+          />
+          <div className="brand-block">
+            <span className="eyebrow">Planning Console</span>
+            <h1 className="page-title">Work Order Prep</h1>
+            <p className="page-subtitle">
+              Move cleanly from planning into execution by checking readiness, generating the work order, and releasing it when the assembly is ready.
+            </p>
+          </div>
         </div>
       </header>
 
@@ -352,12 +352,12 @@ export function WorkOrderPrepPage() {
           <div className="detail-grid">
             <div className="detail-stat">
               <span>Material Readiness</span>
-              <strong>
+              <strong className="detail-badge">
                 {materialReadinessQuery.isLoading
-                  ? 'Checking...'
+                  ? <StatusBadge label="Checking" tone="neutral" />
                   : materialReadinessQuery.data?.isMaterialReady
-                    ? 'Ready'
-                    : 'Missing'}
+                    ? <StatusBadge label="Ready" tone="ready" />
+                    : <StatusBadge label="Missing" tone="missing" />}
               </strong>
             </div>
             <div className="detail-stat">
@@ -366,7 +366,9 @@ export function WorkOrderPrepPage() {
             </div>
             <div className="detail-stat">
               <span>Routing Exists</span>
-              <strong>{routingExists ? 'Yes' : 'No'}</strong>
+              <strong className="detail-badge">
+                <StatusBadge label={routingExists ? 'Ready' : 'Missing'} tone={routingExists ? 'ready' : 'missing'} />
+              </strong>
             </div>
             <div className="detail-stat">
               <span>Route Operations</span>
@@ -378,7 +380,9 @@ export function WorkOrderPrepPage() {
             </div>
             <div className="detail-stat">
               <span>Current WO Status</span>
-              <strong>{existingWorkOrder ? formatStatusLabel(existingWorkOrder.status) : 'Not generated'}</strong>
+              <strong className="detail-badge">
+                {existingWorkOrder ? <StatusBadge status={existingWorkOrder.status} /> : <StatusBadge label="Missing" tone="missing" />}
+              </strong>
             </div>
           </div>
 
@@ -418,10 +422,12 @@ export function WorkOrderPrepPage() {
                 <span>Work Order</span>
                 <strong>{existingWorkOrder.workOrderNumber}</strong>
               </div>
-              <div className="detail-stat">
-                <span>Status</span>
-                <strong>{formatStatusLabel(existingWorkOrder.status)}</strong>
-              </div>
+                <div className="detail-stat">
+                  <span>Status</span>
+                  <strong className="detail-badge">
+                    <StatusBadge status={existingWorkOrder.status} />
+                  </strong>
+                </div>
               <div className="detail-stat">
                 <span>Current Operation</span>
                 <strong>{existingWorkOrder.currentOperationCode ?? 'Waiting'}</strong>
@@ -463,7 +469,12 @@ export function WorkOrderPrepPage() {
               <div className="detail-grid">
                 <div className="detail-stat">
                   <span>Release Ready</span>
-                  <strong>{releaseReadinessQuery.data.isReleaseReady ? 'Ready' : 'Blocked'}</strong>
+                  <strong className="detail-badge">
+                    <StatusBadge
+                      label={releaseReadinessQuery.data.isReleaseReady ? 'Ready' : 'Blocked'}
+                      tone={releaseReadinessQuery.data.isReleaseReady ? 'ready' : 'blocked'}
+                    />
+                  </strong>
                 </div>
                 <div className="detail-stat">
                   <span>Has Operations</span>
@@ -475,11 +486,18 @@ export function WorkOrderPrepPage() {
                 </div>
                 <div className="detail-stat">
                   <span>Material Ready</span>
-                  <strong>{releaseReadinessQuery.data.isMaterialReady ? 'Yes' : 'No'}</strong>
+                  <strong className="detail-badge">
+                    <StatusBadge
+                      label={releaseReadinessQuery.data.isMaterialReady ? 'Ready' : 'Missing'}
+                      tone={releaseReadinessQuery.data.isMaterialReady ? 'ready' : 'missing'}
+                    />
+                  </strong>
                 </div>
                 <div className="detail-stat">
                   <span>WO Status</span>
-                  <strong>{formatStatusLabel(releaseReadinessQuery.data.workOrderStatus)}</strong>
+                  <strong className="detail-badge">
+                    <StatusBadge status={releaseReadinessQuery.data.workOrderStatus} />
+                  </strong>
                 </div>
               </div>
 

@@ -80,3 +80,5 @@ export interface CreateItemMaterialRequirementInput {
   weightKg?: number | null
   notes?: string | null
 }
+
+export type UpdateItemMaterialRequirementInput = CreateItemMaterialRequirementInput

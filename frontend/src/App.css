@@ -500,6 +500,10 @@
   color: var(--ink-950);
 }
 
+.detail-badge {
+  display: inline-flex;
+}
+
 .action-card {
   display: flex;
   justify-content: space-between;
@@ -590,12 +594,26 @@
   color: white;
 }
 
+.table-action-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .table-action--start {
   background: var(--brand);
 }
 
 .table-action--complete {
   background: #1d4ed8;
+}
+
+.table-action--edit {
+  background: rgba(29, 78, 216, 0.9);
+}
+
+.table-action--delete {
+  background: rgba(180, 35, 24, 0.92);
 }
 
 .tab-row {

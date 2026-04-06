@@ -100,17 +100,18 @@ public class WorkCentersController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<WorkCenterResponseDto>> Create([FromBody] CreateWorkCenterRequestDto request)
     {
-        var duplicateCode = await _context.WorkCenters.AnyAsync(x => x.Code == request.Code);
+        var normalizedCode = request.Code.Trim();
+        var duplicateCode = await _context.WorkCenters.AnyAsync(x => x.Code == normalizedCode);
 
         if (duplicateCode)
         {
-            return Conflict(ApiProblemDetailsFactory.Conflict($"A work center with code '{request.Code}' already exists."));
+            return Conflict(ApiProblemDetailsFactory.Conflict($"A work center with code '{normalizedCode}' already exists."));
         }
 
         var workCenter = new WorkCenter
         {
             Id = Guid.NewGuid(),
-            Code = request.Code.Trim(),
+            Code = normalizedCode,
             Name = request.Name.Trim(),
             Department = request.Department.Trim(),
             HourlyRate = request.HourlyRate,
@@ -121,6 +122,38 @@ public class WorkCentersController : ControllerBase
         await _context.SaveChangesAsync();
 
         return CreatedAtAction(nameof(GetById), new { id = workCenter.Id }, MapWorkCenter(workCenter));
+    }
+
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(WorkCenterResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<WorkCenterResponseDto>> Update(Guid id, [FromBody] UpdateWorkCenterRequestDto request)
+    {
+        var workCenter = await _context.WorkCenters.FirstOrDefaultAsync(x => x.Id == id);
+
+        if (workCenter is null)
+        {
+            return NotFound(ApiProblemDetailsFactory.NotFound($"Work center '{id}' was not found."));
+        }
+
+        var normalizedCode = request.Code.Trim();
+        var duplicateCode = await _context.WorkCenters.AnyAsync(x => x.Id != id && x.Code == normalizedCode);
+
+        if (duplicateCode)
+        {
+            return Conflict(ApiProblemDetailsFactory.Conflict($"A work center with code '{normalizedCode}' already exists."));
+        }
+
+        workCenter.Code = normalizedCode;
+        workCenter.Name = request.Name.Trim();
+        workCenter.Department = request.Department.Trim();
+        workCenter.HourlyRate = request.HourlyRate;
+        workCenter.IsActive = request.IsActive;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(MapWorkCenter(workCenter));
     }
 
     private static WorkCenterResponseDto MapWorkCenter(WorkCenter workCenter)

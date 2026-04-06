@@ -105,7 +105,7 @@ export function WorkCenterQueuePage() {
       <section className="board-shell">
         <section className="panel panel-pad">
           {workCentersQuery.isLoading ? (
-            <div className="center-message">Loading work centers...</div>
+            <div className="loading-box">Loading work centers...</div>
           ) : null}
 
           {workCentersQuery.isError ? (
@@ -151,7 +151,7 @@ export function WorkCenterQueuePage() {
 
           <div className="table-wrap">
             {selectedWorkCenterId && queueQuery.isLoading ? (
-              <div className="center-message">Loading live queue...</div>
+              <div className="loading-box">Loading live queue...</div>
             ) : null}
 
             {selectedWorkCenterId && queueQuery.isError ? (

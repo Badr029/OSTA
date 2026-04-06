@@ -59,7 +59,7 @@ export function BomImportBatchDetailPage() {
           <Breadcrumbs
             items={[
               { label: 'Planning', to: '/planning' },
-              { label: 'Imports', to: '/planning/imports' },
+              { label: 'Import History', to: '/planning/imports/history' },
               { label: batchQuery.data?.id ? `Batch ${batchQuery.data.id}` : 'Batch Detail' },
             ]}
           />
@@ -71,14 +71,14 @@ export function BomImportBatchDetailPage() {
             </p>
           </div>
         </div>
-        <Link className="text-link" to="/planning/imports">
-          Back to imports
+        <Link className="text-link" to="/planning/imports/history">
+          Back to import history
         </Link>
       </header>
 
       {batchQuery.isLoading ? (
         <section className="panel">
-          <div className="center-message">Loading batch detail...</div>
+          <div className="loading-box">Loading batch detail...</div>
         </section>
       ) : null}
 

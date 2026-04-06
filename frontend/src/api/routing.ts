@@ -4,6 +4,7 @@ import type {
   CreateRoutingTemplateInput,
   RoutingOperation,
   RoutingTemplateSummary,
+  UpdateRoutingOperationInput,
 } from '../types/routing'
 
 export async function getRoutingTemplates(): Promise<RoutingTemplateSummary[]> {
@@ -34,4 +35,23 @@ export async function createRoutingOperation(
     input,
   )
   return response.data
+}
+
+export async function updateRoutingOperation(
+  routingTemplateId: string,
+  operationId: string,
+  input: UpdateRoutingOperationInput,
+): Promise<RoutingOperation> {
+  const response = await apiClient.put<RoutingOperation>(
+    `/routing-templates/${routingTemplateId}/operations/${operationId}`,
+    input,
+  )
+  return response.data
+}
+
+export async function deleteRoutingOperation(
+  routingTemplateId: string,
+  operationId: string,
+): Promise<void> {
+  await apiClient.delete(`/routing-templates/${routingTemplateId}/operations/${operationId}`)
 }

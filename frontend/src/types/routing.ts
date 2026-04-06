@@ -42,3 +42,5 @@ export interface CreateRoutingOperationInput {
   sequence: number
   isQcGate: boolean
 }
+
+export type UpdateRoutingOperationInput = CreateRoutingOperationInput

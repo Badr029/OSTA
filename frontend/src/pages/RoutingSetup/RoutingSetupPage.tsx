@@ -1,10 +1,14 @@
 import { useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { AxiosError } from 'axios'
+import { Breadcrumbs } from '../../components/ui/Breadcrumbs'
+import { StatusBadge } from '../../components/ui/StatusBadge'
+import { useDeleteRoutingOperation } from '../../features/routing/useDeleteRoutingOperation'
 import { useCreateRoutingOperation } from '../../features/routing/useCreateRoutingOperation'
 import { useCreateRoutingTemplate } from '../../features/routing/useCreateRoutingTemplate'
 import { useRoutingOperations } from '../../features/routing/useRoutingOperations'
 import { useRoutingTemplates } from '../../features/routing/useRoutingTemplates'
+import { useUpdateRoutingOperation } from '../../features/routing/useUpdateRoutingOperation'
 import { useFinishedGoodAssemblies } from '../../features/material-requirements/useFinishedGoodAssemblies'
 import { useItemMasters } from '../../features/material-requirements/useItemMasters'
 import { useProjectFinishedGoods } from '../../features/material-requirements/useProjectFinishedGoods'
@@ -46,10 +50,6 @@ function getErrorMessage(error: unknown) {
   return 'Unknown error'
 }
 
-function formatStatusLabel(value: string) {
-  return value.replace(/([a-z])([A-Z])/g, '$1 $2')
-}
-
 function parseRequiredNumber(value: string) {
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : NaN
@@ -69,13 +69,17 @@ export function RoutingSetupPage() {
   const itemMastersQuery = useItemMasters()
   const workCentersQuery = useWorkCenters()
   const routingTemplatesQuery = useRoutingTemplates()
-  const createRoutingTemplateMutation = useCreateRoutingTemplate()
-  const createRoutingOperationMutation = useCreateRoutingOperation()
+    const createRoutingTemplateMutation = useCreateRoutingTemplate()
+    const createRoutingOperationMutation = useCreateRoutingOperation()
+    const updateRoutingOperationMutation = useUpdateRoutingOperation()
+    const deleteRoutingOperationMutation = useDeleteRoutingOperation()
 
   const [selectedProjectId, setSelectedProjectId] = useState('')
   const [selectedFinishedGoodId, setSelectedFinishedGoodId] = useState('')
   const [selectedAssemblyId, setSelectedAssemblyId] = useState('')
   const [operationForm, setOperationForm] = useState(initialOperationForm)
+  const [editingOperationId, setEditingOperationId] = useState<string | null>(null)
+  const [inactiveWorkCenterWarning, setInactiveWorkCenterWarning] = useState<string | null>(null)
   const [pageError, setPageError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
@@ -140,15 +144,20 @@ export function RoutingSetupPage() {
   const routingOperationsQuery = useRoutingOperations(activeRoutingTemplate?.id)
   const routingOperations = useMemo(() => routingOperationsQuery.data ?? [], [routingOperationsQuery.data])
   const workCenters = useMemo(() => workCentersQuery.data ?? [], [workCentersQuery.data])
-  const effectiveWorkCenterId = useMemo(() => {
-    if (operationForm.workCenterId) {
-      return operationForm.workCenterId
-    }
-
-    return workCenters.find((workCenter) => workCenter.code === 'LASER')?.id ?? workCenters[0]?.id ?? ''
-  }, [operationForm.workCenterId, workCenters])
+  const activeWorkCenters = useMemo(() => workCenters.filter((workCenter) => workCenter.isActive), [workCenters])
+  const defaultActiveWorkCenterId = useMemo(
+    () => activeWorkCenters.find((workCenter) => workCenter.code === 'LASER')?.id ?? activeWorkCenters[0]?.id ?? '',
+    [activeWorkCenters],
+  )
+  const selectedWorkCenterId = editingOperationId
+    ? operationForm.workCenterId
+    : operationForm.workCenterId || defaultActiveWorkCenterId
 
   const handleOperationFieldChange = (field: keyof typeof initialOperationForm, value: string | boolean) => {
+    if (field === 'workCenterId') {
+      setInactiveWorkCenterWarning(null)
+    }
+
     setOperationForm((current) => ({ ...current, [field]: value }))
   }
 
@@ -158,12 +167,41 @@ export function RoutingSetupPage() {
       operationNumber: String(nextSequence).padStart(4, '0'),
       operationCode: '',
       operationName: '',
-      workCenterId: effectiveWorkCenterId,
+      workCenterId: defaultActiveWorkCenterId,
       setupTimeMinutes: '0',
       runTimeMinutes: '0',
       sequence: String(nextSequence),
       isQcGate: false,
     })
+    setEditingOperationId(null)
+    setInactiveWorkCenterWarning(null)
+  }
+
+  const handleEditOperation = (operationId: string) => {
+    const operation = routingOperations.find((item) => item.id === operationId)
+    if (!operation) {
+      return
+    }
+
+    setPageError(null)
+    setSuccessMessage(null)
+    setEditingOperationId(operation.id)
+    const operationWorkCenterIsActive = activeWorkCenters.some((workCenter) => workCenter.id === operation.workCenterId)
+    setOperationForm({
+      operationNumber: operation.operationNumber,
+      operationCode: operation.operationCode,
+      operationName: operation.operationName,
+      workCenterId: operationWorkCenterIsActive ? operation.workCenterId : '',
+      setupTimeMinutes: String(operation.setupTimeMinutes),
+      runTimeMinutes: String(operation.runTimeMinutes),
+      sequence: String(operation.sequence),
+      isQcGate: operation.isQcGate,
+    })
+    setInactiveWorkCenterWarning(
+      operationWorkCenterIsActive
+        ? null
+        : `This route step currently points to inactive work center '${operation.workCenterCode}'. Choose an active work center before saving.`,
+    )
   }
 
   const handleCreateRoutingTemplate = async () => {
@@ -192,7 +230,7 @@ export function RoutingSetupPage() {
     }
   }
 
-  const handleAddOperation = async () => {
+  const handleSaveOperation = async () => {
     if (!activeRoutingTemplate) {
       setPageError('Create a routing template before adding operations.')
       return
@@ -212,7 +250,7 @@ export function RoutingSetupPage() {
       return
     }
 
-    if (!effectiveWorkCenterId) {
+    if (!selectedWorkCenterId) {
       setPageError('Choose a work center for the operation.')
       return
     }
@@ -231,7 +269,7 @@ export function RoutingSetupPage() {
       operationNumber: operationForm.operationNumber.trim(),
       operationCode: operationForm.operationCode.trim(),
       operationName: operationForm.operationName.trim(),
-      workCenterId: effectiveWorkCenterId,
+      workCenterId: selectedWorkCenterId,
       setupTimeMinutes,
       runTimeMinutes,
       sequence,
@@ -242,14 +280,53 @@ export function RoutingSetupPage() {
     setSuccessMessage(null)
 
     try {
-      await createRoutingOperationMutation.mutateAsync({
-        routingTemplateId: activeRoutingTemplate.id,
-        payload,
-      })
+      if (editingOperationId) {
+        await updateRoutingOperationMutation.mutateAsync({
+          routingTemplateId: activeRoutingTemplate.id,
+          operationId: editingOperationId,
+          payload,
+        })
+      } else {
+        await createRoutingOperationMutation.mutateAsync({
+          routingTemplateId: activeRoutingTemplate.id,
+          payload,
+        })
+      }
 
       await queryClient.invalidateQueries({ queryKey: ['routing-operations', activeRoutingTemplate.id] })
       resetOperationForm()
-      setSuccessMessage('Routing operation added successfully.')
+      setSuccessMessage(editingOperationId ? 'Routing operation updated successfully.' : 'Routing operation added successfully.')
+    } catch (error) {
+      setPageError(getErrorMessage(error))
+    }
+  }
+
+  const handleDeleteOperation = async (operationId: string, operationCode: string) => {
+    if (!activeRoutingTemplate) {
+      return
+    }
+
+    const confirmed = window.confirm(`Delete routing operation '${operationCode}' from this route?`)
+    if (!confirmed) {
+      return
+    }
+
+    setPageError(null)
+    setSuccessMessage(null)
+
+    try {
+      await deleteRoutingOperationMutation.mutateAsync({
+        routingTemplateId: activeRoutingTemplate.id,
+        operationId,
+      })
+
+      await queryClient.invalidateQueries({ queryKey: ['routing-operations', activeRoutingTemplate.id] })
+
+      if (editingOperationId === operationId) {
+        resetOperationForm()
+      }
+
+      setSuccessMessage('Routing operation deleted successfully.')
     } catch (error) {
       setPageError(getErrorMessage(error))
     }
@@ -265,12 +342,20 @@ export function RoutingSetupPage() {
   return (
     <main className="page-shell">
       <header className="topbar">
-        <div className="brand-block">
-          <span className="eyebrow">Planning Console</span>
-          <h1 className="page-title">Routing Setup</h1>
-          <p className="page-subtitle">
-            Define the production route that will drive work order generation, operation flow, queue presence, and execution lifecycle.
-          </p>
+        <div className="page-head-stack">
+          <Breadcrumbs
+            items={[
+              { label: 'Planning', to: '/planning' },
+              { label: 'Routing Setup' },
+            ]}
+          />
+          <div className="brand-block">
+            <span className="eyebrow">Planning Console</span>
+            <h1 className="page-title">Routing Setup</h1>
+            <p className="page-subtitle">
+              Define the production route that will drive work order generation, operation flow, queue presence, and execution lifecycle.
+            </p>
+          </div>
         </div>
       </header>
 
@@ -457,7 +542,9 @@ export function RoutingSetupPage() {
                 </div>
                 <div className="detail-stat">
                   <span>Status</span>
-                  <strong>{formatStatusLabel(activeRoutingTemplate.status)}</strong>
+                  <strong>
+                    <StatusBadge status={activeRoutingTemplate.status} />
+                  </strong>
                 </div>
                 <div className="detail-stat">
                   <span>Revision</span>
@@ -509,7 +596,7 @@ export function RoutingSetupPage() {
           ) : null}
 
           {activeRoutingTemplate && routingOperationsQuery.isLoading ? (
-            <div className="center-message">Loading routing operations...</div>
+            <div className="loading-box">Loading routing operations...</div>
           ) : null}
 
           {activeRoutingTemplate && routingOperationsQuery.isError ? (
@@ -544,6 +631,7 @@ export function RoutingSetupPage() {
                     <th>Run</th>
                     <th>Sequence</th>
                     <th>QC Gate</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -557,6 +645,25 @@ export function RoutingSetupPage() {
                       <td>{formatQuantity(operation.runTimeMinutes)}</td>
                       <td>{operation.sequence}</td>
                       <td>{operation.isQcGate ? 'Yes' : 'No'}</td>
+                      <td>
+                        <div className="table-action-stack">
+                          <button
+                            type="button"
+                            className="table-action table-action--edit"
+                            onClick={() => handleEditOperation(operation.id)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="table-action table-action--delete"
+                            disabled={deleteRoutingOperationMutation.isPending}
+                            onClick={() => handleDeleteOperation(operation.id, operation.operationCode)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -565,6 +672,7 @@ export function RoutingSetupPage() {
           ) : null}
         </section>
 
+        {!editingOperationId ? (
         <section className="panel panel-pad">
           <div className="import-section-head">
             <div>
@@ -615,12 +723,12 @@ export function RoutingSetupPage() {
             <div className="field">
               <label htmlFor="routing-work-center">Work Center</label>
               <select
-                id="routing-work-center"
-                value={effectiveWorkCenterId}
+                  id="routing-work-center"
+                value={selectedWorkCenterId}
                 onChange={(event) => handleOperationFieldChange('workCenterId', event.target.value)}
-                disabled={!activeRoutingTemplate || workCentersQuery.isLoading || workCenters.length === 0}
+                disabled={!activeRoutingTemplate || workCentersQuery.isLoading || activeWorkCenters.length === 0}
               >
-                {workCenters.map((workCenter) => (
+                {activeWorkCenters.map((workCenter) => (
                   <option key={workCenter.id} value={workCenter.id}>
                     {workCenter.code} - {workCenter.name}
                   </option>
@@ -628,6 +736,9 @@ export function RoutingSetupPage() {
               </select>
               {workCentersQuery.isLoading ? <span className="muted">Loading work centers...</span> : null}
               {workCentersError ? <span className="muted">{workCentersError}</span> : null}
+              {!workCentersQuery.isLoading && activeWorkCenters.length === 0 ? (
+                <span className="muted">No active work centers are available for new route steps.</span>
+              ) : null}
             </div>
 
             <div className="field">
@@ -688,15 +799,149 @@ export function RoutingSetupPage() {
               type="button"
               className="action-button"
               disabled={!activeRoutingTemplate || createRoutingOperationMutation.isPending}
-              onClick={handleAddOperation}
+              onClick={handleSaveOperation}
             >
               {createRoutingOperationMutation.isPending ? 'Adding...' : 'Add Operation'}
             </button>
           </div>
-
-          {successMessage ? <div className="success-box">{successMessage}</div> : null}
-          {pageError ? <div className="error-box">{pageError}</div> : null}
         </section>
+        ) : null}
+
+        {editingOperationId ? (
+          <section className="panel panel-pad">
+            <div className="import-section-head">
+              <div>
+                <span className="eyebrow">Edit Operation</span>
+                <h2 className="section-title">Update the selected route step</h2>
+                <p className="page-subtitle">
+                  You are editing an existing step. Save to apply the correction, or cancel to leave the route unchanged.
+                </p>
+              </div>
+            </div>
+
+            <div className="import-form-grid">
+              <div className="field">
+                <label htmlFor="routing-edit-operation-number">Operation Number</label>
+                <input
+                  id="routing-edit-operation-number"
+                  type="text"
+                  value={operationForm.operationNumber}
+                  onChange={(event) => handleOperationFieldChange('operationNumber', event.target.value)}
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="routing-edit-operation-code">Operation Code</label>
+                <input
+                  id="routing-edit-operation-code"
+                  type="text"
+                  value={operationForm.operationCode}
+                  onChange={(event) => handleOperationFieldChange('operationCode', event.target.value)}
+                />
+              </div>
+
+              <div className="field field--full">
+                <label htmlFor="routing-edit-operation-name">Operation Name</label>
+                <input
+                  id="routing-edit-operation-name"
+                  type="text"
+                  value={operationForm.operationName}
+                  onChange={(event) => handleOperationFieldChange('operationName', event.target.value)}
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="routing-edit-work-center">Work Center</label>
+                <select
+                  id="routing-edit-work-center"
+                  value={selectedWorkCenterId}
+                  onChange={(event) => handleOperationFieldChange('workCenterId', event.target.value)}
+                  disabled={workCentersQuery.isLoading || activeWorkCenters.length === 0}
+                >
+                  <option value="">Choose an active work center</option>
+                  {activeWorkCenters.map((workCenter) => (
+                    <option key={workCenter.id} value={workCenter.id}>
+                      {workCenter.code} - {workCenter.name}
+                    </option>
+                  ))}
+                </select>
+                {inactiveWorkCenterWarning ? <span className="muted">{inactiveWorkCenterWarning}</span> : null}
+                {!workCentersQuery.isLoading && !inactiveWorkCenterWarning && activeWorkCenters.length === 0 ? (
+                  <span className="muted">No active work centers are available. Re-enable one before saving this step.</span>
+                ) : null}
+              </div>
+
+              <div className="field">
+                <label htmlFor="routing-edit-sequence">Sequence</label>
+                <input
+                  id="routing-edit-sequence"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={operationForm.sequence}
+                  onChange={(event) => handleOperationFieldChange('sequence', event.target.value)}
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="routing-edit-setup-time">Setup Time Minutes</label>
+                <input
+                  id="routing-edit-setup-time"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={operationForm.setupTimeMinutes}
+                  onChange={(event) => handleOperationFieldChange('setupTimeMinutes', event.target.value)}
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="routing-edit-run-time">Run Time Minutes</label>
+                <input
+                  id="routing-edit-run-time"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={operationForm.runTimeMinutes}
+                  onChange={(event) => handleOperationFieldChange('runTimeMinutes', event.target.value)}
+                />
+              </div>
+
+              <div className="field field--full checkbox-field">
+                <label htmlFor="routing-edit-is-qc-gate" className="checkbox-label">
+                  <input
+                    id="routing-edit-is-qc-gate"
+                    type="checkbox"
+                    checked={operationForm.isQcGate}
+                    onChange={(event) => handleOperationFieldChange('isQcGate', event.target.checked)}
+                  />
+                  Mark this step as a QC gate
+                </label>
+              </div>
+            </div>
+
+            <div className="button-row">
+              <button
+                type="button"
+                className="action-button"
+                disabled={updateRoutingOperationMutation.isPending}
+                onClick={handleSaveOperation}
+              >
+                {updateRoutingOperationMutation.isPending ? 'Saving...' : 'Save Operation'}
+              </button>
+              <button
+                type="button"
+                className="action-button action-button--secondary"
+                onClick={resetOperationForm}
+              >
+                Cancel Edit
+              </button>
+            </div>
+          </section>
+        ) : null}
+
+        {successMessage ? <div className="success-box">{successMessage}</div> : null}
+        {pageError ? <div className="error-box">{pageError}</div> : null}
       </section>
     </main>
   )

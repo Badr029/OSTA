@@ -1,13 +1,16 @@
 import { useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { AxiosError } from 'axios'
+import { Breadcrumbs } from '../../components/ui/Breadcrumbs'
 import { useCreateItemMaterialRequirement } from '../../features/material-requirements/useCreateItemMaterialRequirement'
+import { useDeleteItemMaterialRequirement } from '../../features/material-requirements/useDeleteItemMaterialRequirement'
 import { useFinishedGoodAssemblies } from '../../features/material-requirements/useFinishedGoodAssemblies'
 import { useItemMaterialRequirements } from '../../features/material-requirements/useItemMaterialRequirements'
 import { useItemMasters } from '../../features/material-requirements/useItemMasters'
 import { useProjectFinishedGoods } from '../../features/material-requirements/useProjectFinishedGoods'
 import { useProjects } from '../../features/material-requirements/useProjects'
-import type { CreateItemMaterialRequirementInput } from '../../types/materialRequirements'
+import { useUpdateItemMaterialRequirement } from '../../features/material-requirements/useUpdateItemMaterialRequirement'
+import type { CreateItemMaterialRequirementInput, ItemMaterialRequirement } from '../../types/materialRequirements'
 
 function formatQuantity(value: number | null | undefined) {
   if (value == null) {
@@ -58,11 +61,14 @@ export function MaterialRequirementsPage() {
   const projectsQuery = useProjects()
   const itemMastersQuery = useItemMasters()
   const createRequirementMutation = useCreateItemMaterialRequirement()
+  const updateRequirementMutation = useUpdateItemMaterialRequirement()
+  const deleteRequirementMutation = useDeleteItemMaterialRequirement()
 
   const [selectedProjectId, setSelectedProjectId] = useState('')
   const [selectedFinishedGoodId, setSelectedFinishedGoodId] = useState('')
   const [selectedAssemblyId, setSelectedAssemblyId] = useState('')
   const [form, setForm] = useState(initialFormState)
+  const [editingRequirementId, setEditingRequirementId] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
@@ -123,11 +129,28 @@ export function MaterialRequirementsPage() {
 
   const resetForm = () => {
     setForm(initialFormState)
+    setEditingRequirementId(null)
+  }
+
+  const startEditRequirement = (requirement: ItemMaterialRequirement) => {
+    setFormError(null)
+    setSuccessMessage(null)
+    setEditingRequirementId(requirement.id)
+    setForm({
+      materialCode: requirement.materialCode,
+      requiredQuantity: String(requirement.requiredQuantity),
+      uom: requirement.uom,
+      thicknessMm: requirement.thicknessMm == null ? '' : String(requirement.thicknessMm),
+      lengthMm: requirement.lengthMm == null ? '' : String(requirement.lengthMm),
+      widthMm: requirement.widthMm == null ? '' : String(requirement.widthMm),
+      weightKg: requirement.weightKg == null ? '' : String(requirement.weightKg),
+      notes: requirement.notes ?? '',
+    })
   }
 
   const handleSubmit = async () => {
     if (!linkedItemMasterId) {
-      setFormError('Select an assembly that has a linked source item master before creating a requirement.')
+      setFormError('Select an assembly that has a linked source item master before managing requirements.')
       return
     }
 
@@ -167,17 +190,58 @@ export function MaterialRequirementsPage() {
     setSuccessMessage(null)
 
     try {
-      await createRequirementMutation.mutateAsync({
-        itemMasterId: linkedItemMasterId,
-        payload,
-      })
+      if (editingRequirementId) {
+        await updateRequirementMutation.mutateAsync({
+          itemMasterId: linkedItemMasterId,
+          requirementId: editingRequirementId,
+          payload,
+        })
+      } else {
+        await createRequirementMutation.mutateAsync({
+          itemMasterId: linkedItemMasterId,
+          payload,
+        })
+      }
 
       await queryClient.invalidateQueries({
         queryKey: ['item-material-requirements', linkedItemMasterId],
       })
 
       resetForm()
-      setSuccessMessage('Material requirement added successfully.')
+      setSuccessMessage(editingRequirementId ? 'Material requirement updated successfully.' : 'Material requirement added successfully.')
+    } catch (error) {
+      setFormError(getErrorMessage(error))
+    }
+  }
+
+  const handleDeleteRequirement = async (requirement: ItemMaterialRequirement) => {
+    if (!linkedItemMasterId) {
+      return
+    }
+
+    const confirmed = window.confirm(`Delete material requirement '${requirement.materialCode}'?`)
+    if (!confirmed) {
+      return
+    }
+
+    setFormError(null)
+    setSuccessMessage(null)
+
+    try {
+      await deleteRequirementMutation.mutateAsync({
+        itemMasterId: linkedItemMasterId,
+        requirementId: requirement.id,
+      })
+
+      await queryClient.invalidateQueries({
+        queryKey: ['item-material-requirements', linkedItemMasterId],
+      })
+
+      if (editingRequirementId === requirement.id) {
+        resetForm()
+      }
+
+      setSuccessMessage('Material requirement deleted successfully.')
     } catch (error) {
       setFormError(getErrorMessage(error))
     }
@@ -191,12 +255,20 @@ export function MaterialRequirementsPage() {
   return (
     <main className="page-shell">
       <header className="topbar">
-        <div className="brand-block">
-          <span className="eyebrow">Planning Console</span>
-          <h1 className="page-title">Material Requirements</h1>
-          <p className="page-subtitle">
-            Start from the project and assembly the planner actually cares about, then define the linked material requirement setup.
-          </p>
+        <div className="page-head-stack">
+          <Breadcrumbs
+            items={[
+              { label: 'Planning', to: '/planning' },
+              { label: 'Material Requirements' },
+            ]}
+          />
+          <div className="brand-block">
+            <span className="eyebrow">Planning Console</span>
+            <h1 className="page-title">Material Requirements</h1>
+            <p className="page-subtitle">
+              Start from the project and assembly the planner actually cares about, then define the linked material requirement setup.
+            </p>
+          </div>
         </div>
       </header>
 
@@ -410,6 +482,7 @@ export function MaterialRequirementsPage() {
                     <th>Width</th>
                     <th>Weight</th>
                     <th>Notes</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -423,6 +496,25 @@ export function MaterialRequirementsPage() {
                       <td>{formatQuantity(requirement.widthMm)}</td>
                       <td>{formatQuantity(requirement.weightKg)}</td>
                       <td>{requirement.notes ?? '-'}</td>
+                      <td>
+                        <div className="table-action-stack">
+                          <button
+                            type="button"
+                            className="table-action table-action--edit"
+                            onClick={() => startEditRequirement(requirement)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="table-action table-action--delete"
+                            disabled={deleteRequirementMutation.isPending}
+                            onClick={() => handleDeleteRequirement(requirement)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -431,6 +523,7 @@ export function MaterialRequirementsPage() {
           ) : null}
         </section>
 
+        {!editingRequirementId ? (
         <section className="panel panel-pad">
           <div className="import-section-head">
             <div>
@@ -555,10 +648,136 @@ export function MaterialRequirementsPage() {
               {createRequirementMutation.isPending ? 'Adding...' : 'Add Requirement'}
             </button>
           </div>
-
-          {successMessage ? <div className="success-box">{successMessage}</div> : null}
-          {formError ? <div className="error-box">{formError}</div> : null}
         </section>
+        ) : null}
+
+        {editingRequirementId ? (
+          <section className="panel panel-pad">
+            <div className="import-section-head">
+              <div>
+                <span className="eyebrow">Edit Requirement</span>
+                <h2 className="section-title">Update the selected material requirement</h2>
+                <p className="page-subtitle">
+                  You are editing an existing requirement. Save to apply the correction, or cancel to leave it unchanged.
+                </p>
+              </div>
+            </div>
+
+            <div className="import-form-grid">
+              <div className="field">
+                <label htmlFor="edit-material-code">Material Code</label>
+                <input
+                  id="edit-material-code"
+                  type="text"
+                  value={form.materialCode}
+                  onChange={(event) => handleChange('materialCode', event.target.value)}
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="edit-required-quantity">Required Quantity</label>
+                <input
+                  id="edit-required-quantity"
+                  type="number"
+                  min="0.0001"
+                  step="0.001"
+                  value={form.requiredQuantity}
+                  onChange={(event) => handleChange('requiredQuantity', event.target.value)}
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="edit-requirement-uom">UOM</label>
+                <input
+                  id="edit-requirement-uom"
+                  type="text"
+                  value={form.uom}
+                  onChange={(event) => handleChange('uom', event.target.value)}
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="edit-thickness-mm">Thickness mm</label>
+                <input
+                  id="edit-thickness-mm"
+                  type="number"
+                  min="0"
+                  step="0.001"
+                  value={form.thicknessMm}
+                  onChange={(event) => handleChange('thicknessMm', event.target.value)}
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="edit-length-mm">Length mm</label>
+                <input
+                  id="edit-length-mm"
+                  type="number"
+                  min="0"
+                  step="0.001"
+                  value={form.lengthMm}
+                  onChange={(event) => handleChange('lengthMm', event.target.value)}
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="edit-width-mm">Width mm</label>
+                <input
+                  id="edit-width-mm"
+                  type="number"
+                  min="0"
+                  step="0.001"
+                  value={form.widthMm}
+                  onChange={(event) => handleChange('widthMm', event.target.value)}
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="edit-weight-kg">Weight kg</label>
+                <input
+                  id="edit-weight-kg"
+                  type="number"
+                  min="0"
+                  step="0.001"
+                  value={form.weightKg}
+                  onChange={(event) => handleChange('weightKg', event.target.value)}
+                />
+              </div>
+
+              <div className="field field--full">
+                <label htmlFor="edit-requirement-notes">Notes</label>
+                <textarea
+                  id="edit-requirement-notes"
+                  className="textarea-field"
+                  rows={4}
+                  value={form.notes}
+                  onChange={(event) => handleChange('notes', event.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="button-row">
+              <button
+                type="button"
+                className="action-button"
+                disabled={updateRequirementMutation.isPending}
+                onClick={handleSubmit}
+              >
+                {updateRequirementMutation.isPending ? 'Saving...' : 'Save Requirement'}
+              </button>
+              <button
+                type="button"
+                className="action-button action-button--secondary"
+                onClick={resetForm}
+              >
+                Cancel Edit
+              </button>
+            </div>
+          </section>
+        ) : null}
+
+        {successMessage ? <div className="success-box">{successMessage}</div> : null}
+        {formError ? <div className="error-box">{formError}</div> : null}
       </section>
     </main>
   )

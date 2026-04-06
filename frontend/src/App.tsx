@@ -10,6 +10,7 @@ import { MaterialRequirementsPage } from './pages/MaterialRequirements/MaterialR
 import { PlanningHomePage } from './pages/PlanningHome/PlanningHomePage'
 import { RoutingSetupPage } from './pages/RoutingSetup/RoutingSetupPage'
 import { SupervisorHomePage } from './pages/SupervisorHome/SupervisorHomePage'
+import { WorkCentersPage } from './pages/WorkCenters/WorkCentersPage'
 import { WorkOrderPrepPage } from './pages/WorkOrderPrep/WorkOrderPrepPage'
 import { WorkOrderDetailPage } from './pages/WorkOrderDetail/WorkOrderDetailPage'
 import { WorkCenterQueuePage } from './pages/WorkCenterQueue/WorkCenterQueuePage'
@@ -34,6 +35,7 @@ function App() {
           <Route path="imports/history" element={<ImportHistoryPage />} />
           <Route path="imports/:id" element={<BomImportBatchDetailPage />} />
           <Route path="material-requirements" element={<MaterialRequirementsPage />} />
+          <Route path="work-centers" element={<WorkCentersPage />} />
           <Route path="routing-setup" element={<RoutingSetupPage />} />
           <Route path="work-order-prep" element={<WorkOrderPrepPage />} />
         </Route>

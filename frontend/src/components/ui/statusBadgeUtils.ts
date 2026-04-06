@@ -19,6 +19,7 @@ export function getStatusTone(value: string | null | undefined) {
     case 'InProgress':
       return 'inprogress'
     case 'Completed':
+    case 'Imported':
       return 'completed'
     case 'Closed':
     case 'Done':
@@ -27,6 +28,9 @@ export function getStatusTone(value: string | null | undefined) {
     case 'Failed':
     case 'Error':
       return 'blocked'
+    case 'Pending':
+    case 'Processing':
+      return 'planned'
     case 'QcHold':
       return 'qchold'
     case 'Missing':
